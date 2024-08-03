@@ -4,40 +4,60 @@
     <meta name="viewport" content="width=s, initial-scale=1.0">
     <title>Focus Timers | Pomodoro</title>
     <link rel="icon" href="../images/logo.svg" type="image/x-icon">
+    <link rel="stylesheet" href="../styles/style.css">
 </head>
 <body>
     <header>
-        <div>
-            <img src="../images/logo.svg" alt="Focus Timers Logo" href="index.html">
-            <h1>FOCUS TIMERS</h1>
+        <div class="page-logotype">
+            <a class="logo-link " href="index.html">
+                <img src="../images/logo.svg" alt="Focus Timers Logo">
+                <h1>FOCUS TIMERS</h1>
+            </a>
         </div>
-        <nav>
-            <ul>
-                <li><a href="timebag.html">Timebag</a></li>
-                <li><a href="pomodoro.html">Pomodoro</a></li>
-                <li><a href="smart-pomodoro.html">Smart Pomodoro</a></li>
-                <li><a href="about.html">How It Works</a></li>
-            </ul>
-        </nav>
-        <button>Buy Me a Coffee</button>
+        <div class="navegation-container">
+            <nav>
+                <ul>
+                    <li><a href="timebag.html">Timebag</a></li>
+                    <li><a href="pomodoro.html">Pomodoro</a></li>
+                    <li><a href="smart-pomodoro.html">Smart Pomodoro</a></li>
+                    <li><a href="about.html">How It Works?</a></li>
+                </ul>
+            </nav>
+            <a href="https://www.buymeacoffee.com/algorithmicpaws"><button class="donation-button"></button></a>
+        </div>
     </header>
-    <main>
-        <div>
-            <p>00:00</p>
-            <div>
-                <label>Work</label>
-                <input type="number" class="time-setter" id="work-time" min="1" value="20"> 
-                <label>Break</label>
-                <input type="number" class="time-setter" id="break" min="1" value="5">
-                <label>Long Break</label>
-                <input type="number" class="time-setter" id="longbreak-time" min="1" value="30">
+    <main class="pomodoro-timer">
+        <div class="time-container">
+            <h3>Work Time</h3>
+            <p class="time">00:00</p>
+        </div>
+        <div class="timer-settings">
+            <div class="timer-parameters">
+                <div class="form-group">
+                    <img id="focus-icon"src="../images/work.svg" alt="Focus time">
+                    <label  id="focus-lable" for="focus">Focus</label>
+                    <input type="number" id="focus" class="time-setter" id="work-time" min="1" value="20"> 
+                    <label for="focus">min</label>
+                </div>
+                <div class="form-group">
+                    <img id="coffe-icon" src="../images/coffe.svg" alt="Break time">
+                    <label id="break-lable" for="break">Break</label>
+                    <input type="number" id="break" class="time-setter" id="break" min="1" value="5">
+                    <label for="break"">min</label>
+                </div>
+                <div class="form-group">
+                    <img id="couch-icon" src="../images/couch.svg" alt="Long break time">
+                    <label id="longbreak-lable" for="longbreak">Long <br> Break</label>
+                    <input type="number" id="longbreak"class="time-setter" id="longbreak-time" min="1" value="30">
+                    <label for="longbreak"">min</label>
+                </div>
             </div>
-            <div>
+            <div class="timer-buttons">
                 <button>Start</button>
                 <button>Reset</button>
             </div>
-
         </div>
+    
     </main>
 </body>
 </html>
