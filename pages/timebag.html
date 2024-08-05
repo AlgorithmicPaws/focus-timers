@@ -26,18 +26,23 @@
             <a href="https://www.buymeacoffee.com/algorithmicpaws"><button class="donation-button"></button></a>
         </div>
     </header>
-    <main>
-        <div>
-            <p>00:00</p>
-            <div>
-                <label>Timebag</label>
-                <input type="number" class="time-setter" id="breaktime" min="1" value="20"> 
+    <main class="pomodoro-timer">
+        <div class="time-container">
+            <h3>Focus Time</h3>
+            <p class="time">00:00</p>
+        </div>
+        <div class="timer-settings">
+            <div class="timer-parameters">
+                <div class="form-group">
+                    <label for="timebag">Timebag</label>
+                    <input type="number" id="timebag" class="time-setter" id="breaktime" min="1" value="20"> 
+                    <label for="timebag">min</label>
+                </div>
             </div>
-            <div>
+            <div class="timer-buttons">
                 <button>Start</button>
                 <button>Reset</button>
             </div>
-
         </div>
 </body>
 </html>
