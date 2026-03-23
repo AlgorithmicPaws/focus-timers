@@ -1,0 +1,66 @@
+@import "@fontsource-variable/quicksand";
+@import "tailwindcss";
+
+/* =====================================================
+   Design tokens — modo claro (default)
+   ===================================================== */
+:root {
+  /* Superficie */
+  --bg-page: #f5f5f0;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f9f6;
+
+  /* Texto */
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --glass-panel-bg: rgba(255, 255, 255, 0.15);
+  --glass-panel-border: rgba(255, 255, 255, 0.25);
+
+  /* Botones */
+  --btn-cta-bg: rgba(245, 66, 31, 0.8);
+
+  /* Sombra glass */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* =====================================================
+   Modo oscuro
+   ===================================================== */
+.dark {
+  --bg-page: #111111;
+  --bg-card: #1e1e1e;
+  --bg-card-hover: #252525;
+  --text-primary: #f5f5f5;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --glass-bg: rgba(0, 0, 0, 0.2);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-panel-bg: rgba(0, 0, 0, 0.2);
+  --glass-panel-border: rgba(255, 255, 255, 0.1);
+  --btn-cta-bg: rgba(245, 66, 31, 0.85);
+}
+
+/* =====================================================
+   Base
+   ===================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "Quicksand Variable", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
