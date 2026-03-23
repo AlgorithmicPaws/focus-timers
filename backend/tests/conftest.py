@@ -1,3 +1,10 @@
+import os
+
+# Setear variables antes de cualquier import de la app para evitar que
+# pydantic-settings falle al no encontrar DATABASE_URL y JWT_SECRET_KEY.
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("JWT_SECRET_KEY", "testsecretkey" * 4)  # 52 chars
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
