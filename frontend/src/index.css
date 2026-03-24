@@ -2,47 +2,134 @@
 @import "tailwindcss";
 
 /* =====================================================
+   Brand colors — Tailwind v4 @theme
+   ===================================================== */
+@theme {
+  /* Marca (fija, no cambia con el modo) */
+  --color-brand-tomato:      #f5421f;
+  --color-brand-tomato-40:   rgba(245, 66, 31, 0.40);
+  --color-brand-tomato-hover: #d93a1a;
+
+  /* Pomodoro */
+  --color-brand-focus:     #ff7b61;
+  --color-brand-break:     #fbbf24;
+  --color-brand-longbreak: #7ab854;
+
+  /* Flowtime */
+  --color-brand-ft-work: #4f6ef7;
+  --color-brand-ft-rest: #a5b4fc;
+
+  /* Bolsa de Tiempo */
+  --color-brand-bl-work:  #7daa6c;
+  --color-brand-bl-pause: #a8d5be;
+  --color-brand-bl-alert: #ef4444;
+
+  /* Tipografía */
+  --font-sans: "Quicksand Variable", system-ui, sans-serif;
+
+  /* Sombras */
+  --shadow-card:  0 4px 6px rgba(0, 0, 0, 0.10);
+  --shadow-modal: 0 0 10px rgba(0, 0, 0, 0.30);
+  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.15);
+
+  /* Border radius */
+  --radius-card:  1rem;
+  --radius-input: 0.3rem;
+  --radius-modal: 0.5rem;
+  --radius-tag:   15px;
+
+  /* Backdrop blur */
+  --blur-glass: 10px;
+}
+
+/* =====================================================
    Design tokens — modo claro (default)
    ===================================================== */
 :root {
-  /* Superficie */
-  --bg-page: #f5f5f0;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f9f9f6;
+  /* Superficies */
+  --bg-page:        #fff3e2;
+  --bg-card:        #fff8ee;
+  --bg-card-hover:  #fff2e0;
+  --border-soft:    #f3e5d1;
+  --border-default: #e8d5c0;
 
   /* Texto */
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
+  --text-primary:   #000000;
+  --text-secondary: #333333;
+  --text-tertiary:  #7a7a7a;
+  --text-link:      #1372b0;
 
-  /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.2);
-  --glass-border: rgba(255, 255, 255, 0.35);
-  --glass-panel-bg: rgba(255, 255, 255, 0.15);
-  --glass-panel-border: rgba(255, 255, 255, 0.25);
+  /* Acciones */
+  --btn-cta-bg:            rgba(245, 66, 31, 0.40);
+  --btn-cta-hover:         #f5421f;
+  --btn-cta-text:          #000000;
+  --btn-secondary-bg:      rgba(255, 255, 255, 0.6);
+  --btn-secondary-border:  rgba(255, 255, 255, 0.8);
 
-  /* Botones */
-  --btn-cta-bg: rgba(245, 66, 31, 0.8);
+  /* Input */
+  --input-bg:          #ffffff;
+  --input-border:      #000000;
+  --input-placeholder: #7a7a7a;
 
-  /* Sombra glass */
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.15);
+  /* Input borde por fase (panel config timer) */
+  --input-focus:     #db0b08;
+  --input-break:     #c49a00;
+  --input-longbreak: #508c2b;
+
+  /* Tags */
+  --tag-bg:   #f0f0f0;
+  --tag-text: #333333;
+
+  /* Glass (timer display) */
+  --glass-bg:     rgba(255, 255, 255, 0.40);
+  --glass-border: rgba(255, 255, 255, 0.18);
+
+  /* Glass panel (config del timer) */
+  --glass-panel-bg:     rgba(255, 255, 255, 0.25);
+  --glass-panel-border: rgba(255, 255, 255, 0.35);
 }
 
 /* =====================================================
    Modo oscuro
    ===================================================== */
 .dark {
-  --bg-page: #111111;
-  --bg-card: #1e1e1e;
-  --bg-card-hover: #252525;
-  --text-primary: #f5f5f5;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --glass-bg: rgba(0, 0, 0, 0.2);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-panel-bg: rgba(0, 0, 0, 0.2);
-  --glass-panel-border: rgba(255, 255, 255, 0.1);
-  --btn-cta-bg: rgba(245, 66, 31, 0.85);
+  --bg-page:        #1a1412;
+  --bg-card:        #231e1b;
+  --bg-card-hover:  #2a2420;
+  --border-soft:    #3a3228;
+  --border-default: #4a4038;
+
+  --text-primary:   #f5ede4;
+  --text-secondary: #d4c5b8;
+  --text-tertiary:  #8a7a70;
+  --text-link:      #5ba3d4;
+
+  --btn-cta-bg:           rgba(245, 66, 31, 0.50);
+  --btn-cta-hover:        #f5421f;
+  --btn-cta-text:         #ffffff;
+  --btn-secondary-bg:     rgba(255, 255, 255, 0.08);
+  --btn-secondary-border: rgba(255, 255, 255, 0.15);
+
+  --input-bg:          #2e2825;
+  --input-border:      #5a4a40;
+  --input-placeholder: #6a5a50;
+
+  --tag-bg:   #3a3028;
+  --tag-text: #c4b5a8;
+
+  --glass-bg:     rgba(0, 0, 0, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.12);
+
+  --glass-panel-bg:     rgba(0, 0, 0, 0.25);
+  --glass-panel-border: rgba(255, 255, 255, 0.15);
+}
+
+/* =====================================================
+   Animations
+   ===================================================== */
+@keyframes waveScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
 /* =====================================================
@@ -63,4 +150,5 @@ body {
   margin: 0;
   background-color: var(--bg-page);
   color: var(--text-primary);
+  transition: background-color 300ms, color 300ms;
 }
