@@ -1,21 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Header } from "@/shared/components/layout/Header";
 import { SessionCard } from "@/features/sessions/components/SessionCard";
-import { sessionsService } from "@/features/sessions/services/sessions.service";
+import { useSessions, useDeleteSession } from "@/features/sessions/hooks/useSessions";
+import { Spinner } from "@/shared/components/feedback/Spinner";
 import tomatoSvg from "@/assets/images/tomato.svg";
 
 export default function SessionsPage() {
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["sessions"],
-    queryFn: () => sessionsService.list({ limit: 50 }),
-  });
-
-  const { mutate: deleteSession } = useMutation({
-    mutationFn: sessionsService.delete,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sessions"] }),
-  });
+  const { data, isLoading } = useSessions({ limit: 50 });
+  const { mutate: deleteSession } = useDeleteSession();
 
   return (
     <div className="min-h-screen bg-(--bg-page)">
@@ -26,7 +17,9 @@ export default function SessionsPage() {
         </h1>
 
         {isLoading && (
-          <p className="text-(--text-tertiary) text-sm">Loading...</p>
+          <div className="flex justify-center py-16">
+            <Spinner size="lg" />
+          </div>
         )}
 
         {!isLoading && data?.sessions.length === 0 && (

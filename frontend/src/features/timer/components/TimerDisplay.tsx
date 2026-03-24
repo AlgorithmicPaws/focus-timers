@@ -1,11 +1,13 @@
+import { formatSeconds } from "@/features/timer/utils/time.utils";
+
 interface TimerDisplayProps {
   secondsLeft: number;
 }
 
 /** Displays time in MM:SS format with fluid, consistent sizing */
 export function TimerDisplay({ secondsLeft }: TimerDisplayProps) {
-  const minutes = Math.floor(secondsLeft / 60).toString().padStart(2, "0");
-  const seconds = (secondsLeft % 60).toString().padStart(2, "0");
+  const formatted = formatSeconds(secondsLeft);
+  const [minutes, seconds] = formatted.split(":");
 
   return (
     <div
@@ -14,7 +16,7 @@ export function TimerDisplay({ secondsLeft }: TimerDisplayProps) {
       aria-live="off"
       aria-label={`${minutes} minutes ${seconds} seconds`}
     >
-      {minutes}:{seconds}
+      {formatted}
     </div>
   );
 }
