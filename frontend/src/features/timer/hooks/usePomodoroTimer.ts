@@ -1,14 +1,8 @@
 import { useCallback, useState } from "react";
 import { useTimer } from "./useTimer";
+import type { PomodoroPhase, PomodoroConfig } from "@/features/timer/types/timer.types";
 
-export type PomodoroPhase = "idle" | "focus" | "short_break" | "long_break";
-
-export interface PomodoroConfig {
-  focusSec: number;
-  shortBreakSec: number;
-  longBreakSec: number;
-  pomodorosTarget: number;
-}
+export type { PomodoroPhase, PomodoroConfig };
 
 export const DEFAULT_CONFIG: PomodoroConfig = {
   focusSec: 25 * 60,
