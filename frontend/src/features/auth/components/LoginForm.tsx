@@ -8,11 +8,16 @@ import { Button } from "@/shared/components/ui/Button";
 import { ROUTES } from "@/shared/constants/routes";
 
 const schema = z.object({
-  email: z.string().email("Correo inválido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(1, "Password is required"),
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const inputClass =
+  "w-full px-3 py-2.5 text-sm rounded-input border border-(--input-border) bg-(--input-bg) text-(--text-primary) placeholder:text-(--input-placeholder) focus:outline-none focus:ring-2 focus:ring-brand-tomato/50 transition-shadow duration-200";
+
+const labelClass = "block text-sm font-semibold text-(--text-secondary) mb-1";
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -33,48 +38,48 @@ export function LoginForm() {
       setUser(user);
       navigate(ROUTES.DASHBOARD);
     } catch {
-      setError("root", { message: "Correo o contraseña incorrectos" });
+      setError("root", { message: "Incorrect email or password" });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 w-full max-w-sm">
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-[var(--text-secondary)]">Correo</label>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <div>
+        <label className={labelClass}>Email</label>
         <input
           {...register("email")}
           type="email"
-          placeholder="tu@correo.com"
-          aria-label="Correo electrónico"
-          className="px-4 py-2.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-brand-tomato"
+          placeholder="you@example.com"
+          aria-label="Email"
+          className={inputClass}
         />
-        {errors.email && <p className="text-sm text-red-400">{errors.email.message}</p>}
+        {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-[var(--text-secondary)]">Contraseña</label>
+      <div>
+        <label className={labelClass}>Password</label>
         <input
           {...register("password")}
           type="password"
           placeholder="••••••••"
-          aria-label="Contraseña"
-          className="px-4 py-2.5 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-brand-tomato"
+          aria-label="Password"
+          className={inputClass}
         />
-        {errors.password && <p className="text-sm text-red-400">{errors.password.message}</p>}
+        {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
       </div>
 
       {errors.root && (
-        <p className="text-sm text-red-400 text-center">{errors.root.message}</p>
+        <p className="text-sm text-red-500 text-center">{errors.root.message}</p>
       )}
 
-      <Button type="submit" variant="cta" size="lg" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Entrando..." : "Iniciar sesión"}
+      <Button type="submit" variant="cta" size="lg" disabled={isSubmitting} className="w-full mt-2">
+        {isSubmitting ? "Logging in..." : "Log in"}
       </Button>
 
-      <p className="text-center text-sm text-[var(--text-secondary)]">
-        ¿No tienes cuenta?{" "}
+      <p className="text-center text-sm text-(--text-secondary)">
+        Don't have an account?{" "}
         <Link to={ROUTES.REGISTER} className="text-brand-tomato hover:underline">
-          Regístrate
+          Register
         </Link>
       </p>
     </form>
