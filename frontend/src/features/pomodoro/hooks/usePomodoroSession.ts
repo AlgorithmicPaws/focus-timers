@@ -12,9 +12,12 @@ export function usePomodoroSession() {
   const queryClient = useQueryClient();
   const sessionStartRef = useRef<Date | null>(null);
 
-  const { mutate: saveSession } = useMutation({
+  const { mutate: saveSession, isError: saveError } = useMutation({
     mutationFn: sessionsService.create,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    },
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
     },
   });
@@ -22,6 +25,7 @@ export function usePomodoroSession() {
   const handleFocusComplete = useCallback(
     (focusSec: number) => {
       const startedAt = sessionStartRef.current ?? new Date();
+      sessionStartRef.current = null;
       const endedAt = new Date();
 
       saveSession({
@@ -65,5 +69,6 @@ export function usePomodoroSession() {
     start,
     reset,
     setConfig,
+    saveError,
   };
 }

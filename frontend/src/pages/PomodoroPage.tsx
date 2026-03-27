@@ -13,7 +13,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { ROUTES } from "@/shared/constants/routes";
 
 export default function PomodoroPage() {
-  const { phase, secondsLeft, isRunning, pomodorosCompleted, config, start, pause, skipPhase, reset } =
+  const { phase, secondsLeft, isRunning, pomodorosCompleted, config, start, pause, skipPhase, reset, saveError } =
     usePomodoroSession();
 
   const totalSec = getPhaseTotalSec(phase, config);
@@ -46,6 +46,12 @@ export default function PomodoroPage() {
         <TimerDisplay secondsLeft={secondsLeft} />
 
         <PomodoroCounter completed={pomodorosCompleted} target={config.pomodorosTarget} />
+
+        {saveError && (
+          <p className="text-sm text-red-500 text-center">
+            Session could not be saved. Check your connection.
+          </p>
+        )}
 
         <div className="flex gap-3">
           {isRunning ? (
