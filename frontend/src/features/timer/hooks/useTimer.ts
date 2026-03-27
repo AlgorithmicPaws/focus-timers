@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TimerStatus } from "@/features/timer/types/timer.types";
 
-export type TimerStatus = "idle" | "running" | "paused" | "finished";
+export type { TimerStatus };
 
 interface UseTimerOptions {
   /** Duración inicial en segundos */
