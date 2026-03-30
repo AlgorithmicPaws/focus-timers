@@ -2,8 +2,9 @@ import { apiClient } from "@/shared/lib/api-client";
 import type {
   CreateSessionPayload,
   FocusSession,
+  SessionFilter,
   SessionListResponse,
-  Technique,
+  StatsResponse,
 } from "@/features/sessions/types/session.types";
 
 export const sessionsService = {
@@ -12,12 +13,20 @@ export const sessionsService = {
     return res.data;
   },
 
-  list: async (params?: {
-    technique?: Technique;
-    limit?: number;
-    offset?: number;
-  }): Promise<SessionListResponse> => {
+  list: async (filters?: SessionFilter & { limit?: number; offset?: number }): Promise<SessionListResponse> => {
+    const params: Record<string, string | number> = {};
+    if (filters?.technique) params.technique = filters.technique;
+    if (filters?.interval) params.interval = filters.interval;
+    if (filters?.project) params.project = filters.project;
+    if (filters?.limit !== undefined) params.limit = filters.limit;
+    if (filters?.offset !== undefined) params.offset = filters.offset;
     const res = await apiClient.get<SessionListResponse>("/sessions/", { params });
+    return res.data;
+  },
+
+  getStats: async (interval?: string): Promise<StatsResponse> => {
+    const params = interval ? { interval } : {};
+    const res = await apiClient.get<StatsResponse>("/sessions/stats", { params });
     return res.data;
   },
 

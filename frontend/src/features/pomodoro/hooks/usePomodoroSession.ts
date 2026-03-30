@@ -2,45 +2,26 @@ import { useCallback, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePomodoroTimer } from "@/features/timer/hooks/usePomodoroTimer";
 import { sessionsService } from "@/features/sessions/services/sessions.service";
+import { useAuthGuardedSave } from "@/shared/hooks/useAuthGuardedSave";
 import type { PomodoroConfig } from "@/features/timer/hooks/usePomodoroTimer";
 
-/**
- * Orquesta el timer Pomodoro con el guardado de sesión al completar.
- * El timer corre 100% en cliente; solo llama a la API al finalizar.
- */
-export function usePomodoroSession() {
+export function usePomodoroSession(taskName = "") {
   const queryClient = useQueryClient();
   const sessionStartRef = useRef<Date | null>(null);
+  const totalWorkSecRef = useRef(0);
+  const { guardedSave, needsAuth, clearNeedsAuth } = useAuthGuardedSave();
 
   const { mutate: saveSession, isError: saveError } = useMutation({
     mutationFn: sessionsService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
     },
-    onError: () => {
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    },
   });
 
-  const handleFocusComplete = useCallback(
-    (focusSec: number) => {
-      const startedAt = sessionStartRef.current ?? new Date();
-      sessionStartRef.current = null;
-      const endedAt = new Date();
-
-      saveSession({
-        technique: "pomodoro",
-        started_at: startedAt.toISOString(),
-        ended_at: endedAt.toISOString(),
-        total_work_seconds: focusSec,
-        total_break_seconds: 0,
-        completed: true,
-        day_of_week: startedAt.getDay() === 0 ? 6 : startedAt.getDay() - 1,
-        hour_of_day: startedAt.getHours(),
-      });
-    },
-    [saveSession],
-  );
+  // Accumulate work seconds each time a focus phase ends (no auto-save)
+  const handleFocusComplete = useCallback((phaseSec: number) => {
+    totalWorkSecRef.current += phaseSec;
+  }, []);
 
   const timer = usePomodoroTimer(handleFocusComplete);
 
@@ -53,6 +34,7 @@ export function usePomodoroSession() {
 
   const reset = useCallback(() => {
     sessionStartRef.current = null;
+    totalWorkSecRef.current = 0;
     timer.reset();
   }, [timer]);
 
@@ -60,8 +42,36 @@ export function usePomodoroSession() {
     (config: PomodoroConfig) => {
       timer.setConfig(config);
       sessionStartRef.current = null;
+      totalWorkSecRef.current = 0;
     },
     [timer],
+  );
+
+  // Manual save: pass extraWorkSec for seconds elapsed in the current in-progress focus phase
+  const saveManual = useCallback(
+    (completed: boolean, extraWorkSec = 0) => {
+      const startedAt = sessionStartRef.current ?? new Date();
+      const endedAt = new Date();
+      const totalWork = totalWorkSecRef.current + extraWorkSec;
+
+      guardedSave(() =>
+        saveSession({
+          technique: "pomodoro",
+          task_name: taskName || null,
+          started_at: startedAt.toISOString(),
+          ended_at: endedAt.toISOString(),
+          total_work_seconds: totalWork,
+          total_break_seconds: 0,
+          completed,
+          day_of_week: startedAt.getDay() === 0 ? 6 : startedAt.getDay() - 1,
+          hour_of_day: startedAt.getHours(),
+        }),
+      );
+
+      sessionStartRef.current = null;
+      totalWorkSecRef.current = 0;
+    },
+    [saveSession, guardedSave, taskName],
   );
 
   return {
@@ -69,6 +79,9 @@ export function usePomodoroSession() {
     start,
     reset,
     setConfig,
+    saveManual,
     saveError,
+    needsAuth,
+    clearNeedsAuth,
   };
 }
