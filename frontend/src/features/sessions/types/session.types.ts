@@ -60,14 +60,14 @@ export interface FocusSession {
 export interface CreateSessionPayload {
   technique: Technique;
   task_name: string | null;
-  task_tags: string[] | null;
-  project: string | null;
+  task_tags?: string[] | null;
+  project?: string | null;
   started_at: string;
   ended_at: string;
   total_work_seconds: number;
   total_break_seconds: number;
   completed: boolean;
-  technique_config: Record<string, unknown>;
+  technique_config?: Record<string, unknown>;
   day_of_week: number | null;
   hour_of_day: number | null;
   pomodoro_details?: {
@@ -120,6 +120,6 @@ export interface TechniqueStats {
 export interface StatsResponse {
   total_sessions: number;
   total_focus_minutes: number;
-  by_technique: Record<Technique, TechniqueStats>;
+  by_technique: Record<string, TechniqueStats>;
   interval: string;
 }
