@@ -12,7 +12,7 @@ export function TimerDisplay({ secondsLeft }: TimerDisplayProps) {
   return (
     <div
       className="w-full text-center font-bold leading-none tabular-nums drop-shadow-sm"
-      style={{ color: "#2a2a2a", fontSize: "clamp(4.5rem, 22vw, 9rem)" }}
+      style={{ color: "var(--text-primary)", fontSize: "clamp(4.5rem, 22vw, 9rem)" }}
       aria-live="off"
       aria-label={`${minutes} minutes ${seconds} seconds`}
     >

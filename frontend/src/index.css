@@ -57,7 +57,9 @@
   --text-primary:   #000000;
   --text-secondary: #333333;
   --text-tertiary:  #7a7a7a;
+  --text-muted:     #9a9a9a;
   --text-link:      #1372b0;
+  --text-error:     #dc2626;
 
   /* Acciones */
   --btn-cta-bg:            rgba(245, 66, 31, 0.40);
@@ -102,7 +104,9 @@
   --text-primary:   #f5ede4;
   --text-secondary: #d4c5b8;
   --text-tertiary:  #8a7a70;
+  --text-muted:     #6a5a50;
   --text-link:      #5ba3d4;
+  --text-error:     #f87171;
 
   --btn-cta-bg:           rgba(245, 66, 31, 0.50);
   --btn-cta-hover:        #f5421f;

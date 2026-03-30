@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.focus_session import Technique
 
 
 class PomodoroDetailsRequest(BaseModel):
-    focus_interval_sec: int = Field(default=1500, ge=60)
+    focus_interval_sec: int = Field(default=1500, ge=60, le=14400)
     short_break_sec: int = Field(default=300, ge=30)
     long_break_sec: int = Field(default=900, ge=60)
     pomodoros_target: int = Field(default=4, ge=1, le=12)
@@ -18,6 +18,36 @@ class PomodoroDetailsRequest(BaseModel):
 
 
 class PomodoroDetailsResponse(PomodoroDetailsRequest):
+    id: int
+    session_id: int
+
+    model_config = {"from_attributes": True}
+
+
+class FlowtimeDetailsRequest(BaseModel):
+    break_model: str = Field(default="proportional")  # "proportional" | "stepped"
+    break_ratio: int = Field(default=5, ge=1)
+    break_recommended_sec: int = Field(ge=0)
+    break_actual_sec: Optional[int] = None
+
+
+class FlowtimeDetailsResponse(FlowtimeDetailsRequest):
+    id: int
+    session_id: int
+
+    model_config = {"from_attributes": True}
+
+
+class BolsaDetailsRequest(BaseModel):
+    budget_total_sec: int = Field(ge=0)
+    budget_work_sec: int = Field(ge=0)
+    budget_break_sec: int = Field(ge=0)
+    budget_used_sec: int = Field(default=0, ge=0)
+    breaks_taken: Optional[list] = None  # [{start, end, duration_sec}]
+    budget_exhausted: bool = False
+
+
+class BolsaDetailsResponse(BolsaDetailsRequest):
     id: int
     session_id: int
 
@@ -40,6 +70,14 @@ class CreateSessionRequest(BaseModel):
     hour_of_day: int | None = Field(None, ge=0, le=23)
     mood_rating: int | None = Field(None, ge=1, le=5)
     pomodoro_details: PomodoroDetailsRequest | None = None
+    flowtime_details: FlowtimeDetailsRequest | None = None
+    bolsa_details: BolsaDetailsRequest | None = None
+
+    @model_validator(mode="after")
+    def validate_ended_after_started(self) -> "CreateSessionRequest":
+        if self.ended_at is not None and self.ended_at < self.started_at:
+            raise ValueError("ended_at must be >= started_at")
+        return self
 
 
 class SessionResponse(BaseModel):
@@ -61,6 +99,8 @@ class SessionResponse(BaseModel):
     mood_rating: int | None
     created_at: datetime
     pomodoro_details: PomodoroDetailsResponse | None = None
+    flowtime_details: FlowtimeDetailsResponse | None = None
+    bolsa_details: BolsaDetailsResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -70,3 +110,20 @@ class SessionListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+# --- Stats ---
+
+class TechniqueStats(BaseModel):
+    total_sessions: int
+    completed_sessions: int
+    completion_rate: float
+    total_work_minutes: float
+    avg_work_minutes: float
+
+
+class StatsResponse(BaseModel):
+    total_sessions: int
+    total_focus_minutes: float
+    by_technique: dict[str, TechniqueStats]
+    interval: str
