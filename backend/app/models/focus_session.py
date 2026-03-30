@@ -9,6 +9,8 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.flowtime_details import FlowtimeDetails
+    from app.models.bolsa_details import BolsaDetails
 
 
 class Technique(str, enum.Enum):
@@ -54,6 +56,12 @@ class FocusSession(Base):
     user: Mapped["User"] = relationship("User", back_populates="sessions")
     pomodoro_details: Mapped["PomodoroDetails | None"] = relationship(
         "PomodoroDetails", back_populates="session", cascade="all, delete-orphan", uselist=False
+    )
+    flowtime_details: Mapped["FlowtimeDetails | None"] = relationship(
+        "FlowtimeDetails", back_populates="session", cascade="all, delete-orphan", uselist=False
+    )
+    bolsa_details: Mapped["BolsaDetails | None"] = relationship(
+        "BolsaDetails", back_populates="session", cascade="all, delete-orphan", uselist=False
     )
 
 

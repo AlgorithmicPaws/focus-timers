@@ -24,7 +24,7 @@ export function getPhaseTotalSec(
 }
 
 export function getWaterLevel(phase: PomodoroPhase, secondsLeft: number, totalSec: number): number {
-  if (phase === "idle") return 1;
+  if (phase === "idle") return 0;
   if (phase === "focus") return secondsLeft / totalSec;
   return 1 - secondsLeft / totalSec;
 }
