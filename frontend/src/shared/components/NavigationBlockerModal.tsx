@@ -1,4 +1,3 @@
-import type { BlockerFunction } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 
 interface Blocker {
