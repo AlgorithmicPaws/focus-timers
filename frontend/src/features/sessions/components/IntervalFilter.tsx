@@ -1,11 +1,11 @@
 import type { SessionInterval } from "@/features/sessions/types/session.types";
 
 const OPTIONS: { label: string; value: SessionInterval | undefined }[] = [
-  { label: "All time", value: undefined },
-  { label: "Week", value: "week" },
-  { label: "Month", value: "month" },
+  { label: "Week",      value: "week" },
+  { label: "Month",    value: "month" },
   { label: "3 months", value: "3months" },
-  { label: "Year", value: "year" },
+  { label: "Year",     value: "year" },
+  { label: "All time", value: undefined },
 ];
 
 interface IntervalFilterProps {

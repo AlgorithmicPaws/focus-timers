@@ -39,7 +39,7 @@ def list_sessions(
     technique: Technique | None = Query(None, description="pomodoro | flowtime | bolsa"),
     interval: str | None = Query(None, description="week | month | 3months | year"),
     project: str | None = Query(None),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=20, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

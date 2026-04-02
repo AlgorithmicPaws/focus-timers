@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from sqlalchemy import func, case
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.focus_session import FocusSession, PomodoroDetails, Technique
@@ -98,29 +99,42 @@ class SessionRepository:
         return sessions, total
 
     def get_raw_stats_by_user(self, user_id: int, interval: str | None = None) -> dict:
-        """Retorna datos crudos de sesiones agrupados por técnica. El cálculo de métricas se hace en el service."""
-        query = self.db.query(FocusSession).filter(FocusSession.user_id == user_id)
+        """Retorna estadísticas agregadas via SQL GROUP BY — sin cargar sesiones en memoria."""
+        base_filter = [FocusSession.user_id == user_id]
         if interval:
             start = _get_interval_start(interval)
             if start:
-                query = query.filter(FocusSession.started_at >= start)
+                base_filter.append(FocusSession.started_at >= start)
 
-        sessions = query.all()
+        # Una sola query agrupada por técnica
+        rows = (
+            self.db.query(
+                FocusSession.technique,
+                func.count(FocusSession.id).label("total_sessions"),
+                func.sum(case((FocusSession.completed == True, 1), else_=0)).label("completed_sessions"),
+                func.sum(FocusSession.total_work_seconds).label("total_work_seconds"),
+            )
+            .filter(*base_filter)
+            .group_by(FocusSession.technique)
+            .all()
+        )
+
         by_technique: dict[str, dict] = {}
+        total_sessions = 0
+        total_work_seconds = 0
 
-        for technique in Technique:
-            tech_sessions = [s for s in sessions if s.technique == technique]
-            if not tech_sessions:
-                continue
-            by_technique[technique.value] = {
-                "total_sessions": len(tech_sessions),
-                "completed_sessions": sum(1 for s in tech_sessions if s.completed),
-                "total_work_seconds": sum(s.total_work_seconds for s in tech_sessions),
+        for row in rows:
+            by_technique[row.technique.value] = {
+                "total_sessions": row.total_sessions,
+                "completed_sessions": row.completed_sessions or 0,
+                "total_work_seconds": row.total_work_seconds or 0,
             }
+            total_sessions += row.total_sessions
+            total_work_seconds += row.total_work_seconds or 0
 
         return {
-            "total_sessions": len(sessions),
-            "total_work_seconds": sum(s.total_work_seconds for s in sessions),
+            "total_sessions": total_sessions,
+            "total_work_seconds": total_work_seconds,
             "by_technique": by_technique,
         }
 

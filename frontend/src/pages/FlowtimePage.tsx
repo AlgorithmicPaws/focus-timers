@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useFlowtimeSession } from "@/features/flowtime/hooks/useFlowtimeSession";
 import { useNavigationGuard } from "@/shared/hooks/useNavigationGuard";
 import { FlowtimeConfig } from "@/features/flowtime/components/FlowtimeConfig";
+import { PresetSelector } from "@/features/settings/components/PresetSelector";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import { FlowNudge } from "@/features/flowtime/components/FlowNudge";
 import { WaterTank } from "@/shared/components/WaterTank";
 import { AuthPrompt } from "@/shared/components/AuthPrompt";
 import { Button } from "@/shared/components/ui/Button";
 import { Header } from "@/shared/components/layout/Header";
 import { NavigationBlockerModal } from "@/shared/components/NavigationBlockerModal";
+import { useTick } from "@/shared/hooks/useTick";
 import { formatSeconds } from "@/features/timer/utils/time.utils";
 import { calculateBreakSeconds } from "@/features/timer/utils/break.calculator";
 import { DEFAULT_FLOWTIME_CONFIG } from "@/features/flowtime/types/flowtime.types";
@@ -18,6 +21,7 @@ const FLOWTIME_MAX_SEC = 120 * 60;
 export default function FlowtimePage() {
   const [config, setConfig] = useState<FlowtimeConfigType>(DEFAULT_FLOWTIME_CONFIG);
   const [taskName, setTaskName] = useState("");
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const {
     phase,
@@ -36,6 +40,7 @@ export default function FlowtimePage() {
   } = useFlowtimeSession(config, taskName);
 
   const isActive = phase !== "idle";
+  useTick(isActive);
   const { blocker } = useNavigationGuard(isActive);
 
   // Focus: fills from 0 → 1 as work accumulates (max 120 min)
@@ -121,7 +126,21 @@ className="w-full text-center text-sm font-medium bg-transparent border-b-2 bord
         )}
 
         {!isActive && (
-          <FlowtimeConfig config={config} onChange={setConfig} disabled={isActive} />
+          <>
+            <FlowtimeConfig config={config} onChange={setConfig} disabled={isActive} />
+            {isAuthenticated && (
+              <PresetSelector
+                technique="flowtime"
+                currentConfig={{ breakModel: config.breakModel, breakRatio: config.breakRatio }}
+                onApplyPreset={(c) =>
+                  setConfig({
+                    breakModel: (c.breakModel as FlowtimeConfigType['breakModel']) ?? config.breakModel,
+                    breakRatio: Number(c.breakRatio) || config.breakRatio,
+                  })
+                }
+              />
+            )}
+          </>
         )}
 
         <div className="flex gap-3 flex-wrap justify-center">

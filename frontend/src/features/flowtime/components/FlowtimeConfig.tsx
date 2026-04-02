@@ -9,9 +9,9 @@ const STEPPED_PRESET = FLOWTIME_PRESETS["Stepped"];
 
 // Short label shown in the center box — ratio format work:break
 const PRESET_SHORT: Record<string, string> = {
+  "Relaxed (÷3)":  "1 : 3",
   "Standard (÷5)": "1 : 5",
-  "Intense (÷7)": "1 : 7",
-  "Relaxed (÷3)": "1 : 3",
+  "Intense (÷7)":  "1 : 7",
 };
 
 interface FlowtimeConfigProps {
