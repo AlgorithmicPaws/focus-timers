@@ -1,7 +1,9 @@
+import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFlowtimeTimer } from "@/features/timer/hooks/useFlowtimeTimer";
 import { sessionsService } from "@/features/sessions/services/sessions.service";
 import { useAuthGuardedSave } from "@/shared/hooks/useAuthGuardedSave";
+import { useSound } from "@/shared/hooks/useSound";
 import { getDayOfWeek, getCurrentHour } from "@/features/timer/utils/time.utils";
 import type { FlowtimeConfig } from "@/features/flowtime/types/flowtime.types";
 
@@ -12,6 +14,7 @@ import type { FlowtimeConfig } from "@/features/flowtime/types/flowtime.types";
 export function useFlowtimeSession(config: FlowtimeConfig, taskName?: string) {
   const queryClient = useQueryClient();
   const { guardedSave, needsAuth, clearNeedsAuth } = useAuthGuardedSave();
+  const { play } = useSound();
 
   const { mutate: saveSession, isError: saveError } = useMutation({
     mutationFn: sessionsService.create,
@@ -23,6 +26,7 @@ export function useFlowtimeSession(config: FlowtimeConfig, taskName?: string) {
   const timer = useFlowtimeTimer({
     config,
     onSessionEnd: (data) => {
+      play('alarm-end');
       guardedSave(() =>
         saveSession({
           technique: "flowtime",
@@ -49,5 +53,15 @@ export function useFlowtimeSession(config: FlowtimeConfig, taskName?: string) {
     },
   });
 
-  return { ...timer, saveError, needsAuth, clearNeedsAuth };
+  const takeBreakWithSound = useCallback(() => {
+    play('alarm-break');
+    timer.takeBreak();
+  }, [play, timer]);
+
+  const resumeFocusWithSound = useCallback(() => {
+    play('alarm-break');
+    timer.resumeFocus();
+  }, [play, timer]);
+
+  return { ...timer, takeBreak: takeBreakWithSound, resumeFocus: resumeFocusWithSound, saveError, needsAuth, clearNeedsAuth };
 }

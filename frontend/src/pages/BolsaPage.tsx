@@ -2,11 +2,14 @@ import { useState } from "react";
 import { useBolsaSession } from "@/features/bolsa/hooks/useBolsaSession";
 import { useNavigationGuard } from "@/shared/hooks/useNavigationGuard";
 import { BolsaConfigPanel } from "@/features/bolsa/components/BolsaConfigPanel";
+import { PresetSelector } from "@/features/settings/components/PresetSelector";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import { WaterTank } from "@/shared/components/WaterTank";
 import { AuthPrompt } from "@/shared/components/AuthPrompt";
 import { Button } from "@/shared/components/ui/Button";
 import { Header } from "@/shared/components/layout/Header";
 import { NavigationBlockerModal } from "@/shared/components/NavigationBlockerModal";
+import { useTick } from "@/shared/hooks/useTick";
 import { formatSeconds } from "@/features/timer/utils/time.utils";
 import { DEFAULT_BOLSA_CONFIG } from "@/features/bolsa/types/bolsa.types";
 import type { BolsaConfig } from "@/features/bolsa/types/bolsa.types";
@@ -16,6 +19,7 @@ import { BlockIcon } from "@/shared/components/icons/BlockIcon";
 export default function BolsaPage() {
   const [config, setConfig] = useState<BolsaConfig>(DEFAULT_BOLSA_CONFIG);
   const [taskName, setTaskName] = useState("");
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const {
     phase,
@@ -32,6 +36,7 @@ export default function BolsaPage() {
   } = useBolsaSession(config, taskName);
 
   const isActive = phase !== "idle" && phase !== "completed";
+  useTick(phase === "working");
   const { blocker } = useNavigationGuard(isActive);
 
   // Work phase: water drains with block time (block = 100% full)
@@ -112,6 +117,18 @@ export default function BolsaPage() {
 className="w-full text-center text-sm font-medium bg-transparent border-b-2 border-brand-bl-work/40 outline-none py-2 text-(--text-primary) placeholder:text-(--text-muted) placeholder:font-normal focus:border-brand-bl-work transition-colors duration-200"
             />
             <BolsaConfigPanel config={config} onChange={setConfig} />
+            {isAuthenticated && (
+              <PresetSelector
+                technique="bolsa"
+                currentConfig={{ blockDurationSec: config.blockDurationSec, budgetSec: config.budgetSec }}
+                onApplyPreset={(c) =>
+                  setConfig({
+                    blockDurationSec: Number(c.blockDurationSec) || config.blockDurationSec,
+                    budgetSec: Number(c.budgetSec) || config.budgetSec,
+                  })
+                }
+              />
+            )}
           </>
         )}
 

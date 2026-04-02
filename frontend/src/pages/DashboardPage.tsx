@@ -3,6 +3,8 @@ import { Header } from "@/shared/components/layout/Header";
 import { Button } from "@/shared/components/ui/Button";
 import { StatsGrid } from "@/features/sessions/components/StatsGrid";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useSettings } from "@/features/settings/hooks/useSettings";
+import { useSessions } from "@/features/sessions/hooks/useSessions";
 import { ROUTES } from "@/shared/constants/routes";
 import pomodoroSvg from "@/assets/images/pomodoro.svg";
 import flowtimeSvg from "@/assets/images/flowtime.svg";
@@ -34,6 +36,46 @@ const TECHNIQUES = [
     route: ROUTES.BOLSA,
   },
 ];
+
+function DailyGoalProgress() {
+  const { settings } = useSettings();
+  const { data } = useSessions({ interval: 'week', limit: 200 });
+
+  const goalMin = settings?.daily_goal_min ?? 120;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todaySessions = data?.sessions.filter(
+    (s) => s.started_at.slice(0, 10) === today
+  ) ?? [];
+  const todayMinutes = todaySessions.reduce((sum, s) => sum + s.total_work_seconds / 60, 0);
+  const pct = Math.min(100, (todayMinutes / goalMin) * 100);
+  const reached = todayMinutes >= goalMin;
+
+  return (
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-3"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-soft)' }}
+    >
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          Today's goal
+        </span>
+        <span className="text-sm font-semibold" style={{ color: reached ? 'var(--color-brand-bl-work)' : 'var(--text-primary)' }}>
+          {reached ? '🎯 Goal reached!' : `${Math.round(todayMinutes)} / ${goalMin} min`}
+        </span>
+      </div>
+      <div className="h-2.5 rounded-full" style={{ background: 'var(--border-soft)' }}>
+        <div
+          className="h-2.5 rounded-full transition-all duration-700"
+          style={{
+            width: `${pct}%`,
+            background: reached ? 'var(--color-brand-bl-work)' : 'var(--color-brand-tomato)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -73,9 +115,12 @@ export default function DashboardPage() {
         </div>
 
         {isAuthenticated && (
-          <div className="mt-14">
-            <p className="text-xs text-(--text-muted) uppercase tracking-widest font-medium mb-4 text-center">This week</p>
-            <StatsGrid interval="week" />
+          <div className="mt-14 flex flex-col gap-6">
+            <DailyGoalProgress />
+            <div>
+              <p className="text-xs text-(--text-muted) uppercase tracking-widest font-medium mb-4 text-center">This week</p>
+              <StatsGrid interval="week" />
+            </div>
           </div>
         )}
 
