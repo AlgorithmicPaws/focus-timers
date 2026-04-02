@@ -1,8 +1,18 @@
+import { useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { queryClient } from "@/shared/lib/query-client";
 import { router } from "./router";
+import { ToastProvider } from "@/shared/components/Toast";
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") ?? "dark";
+    document.documentElement.classList.toggle("dark", saved === "dark");
+  }, []);
+  return <>{children}</>;
+}
 
 function ErrorFallback({ error }: { error: unknown }) {
   const message = error instanceof Error ? error.message : "Unknown error";
@@ -26,7 +36,10 @@ export default function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ThemeProvider>
+          <ToastProvider />
+          <RouterProvider router={router} />
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

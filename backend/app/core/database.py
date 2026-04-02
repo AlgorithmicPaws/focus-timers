@@ -5,12 +5,19 @@ from app.core.config import get_settings
 
 
 def _build_engine():
-    """Crea el engine con SSL condicional según entorno."""
+    """Crea el engine con SSL condicional según entorno y pool de conexiones configurado."""
     settings = get_settings()
     connect_args = {}
     if settings.is_production:
         connect_args["sslmode"] = "require"
-    return create_engine(settings.DATABASE_URL, connect_args=connect_args)
+    return create_engine(
+        settings.DATABASE_URL,
+        connect_args=connect_args,
+        pool_pre_ping=True,   # descarta conexiones muertas antes de usarlas
+        pool_size=5,          # conexiones persistentes en el pool
+        max_overflow=10,      # conexiones extra bajo carga puntual
+        pool_recycle=1800,    # recicla cada 30 min (evita timeouts de Supabase)
+    )
 
 
 engine = _build_engine()

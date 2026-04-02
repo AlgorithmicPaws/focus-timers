@@ -3,7 +3,9 @@ import { usePomodoroSession } from "@/features/pomodoro/hooks/usePomodoroSession
 import { WaterTank } from "@/shared/components/WaterTank";
 import { PomodoroCounter } from "@/features/pomodoro/components/PomodoroCounter";
 import { PomodoroConfigPanel } from "@/features/pomodoro/components/PomodoroConfigPanel";
+import { PresetSelector } from "@/features/settings/components/PresetSelector";
 import { useNavigationGuard } from "@/shared/hooks/useNavigationGuard";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 import {
   PHASE_LABELS,
   PHASE_WATER_COLORS,
@@ -15,9 +17,11 @@ import { Button } from "@/shared/components/ui/Button";
 import { Header } from "@/shared/components/layout/Header";
 import { AuthPrompt } from "@/shared/components/AuthPrompt";
 import { NavigationBlockerModal } from "@/shared/components/NavigationBlockerModal";
+import { useTick } from "@/shared/hooks/useTick";
 
 export default function PomodoroPage() {
   const [taskName, setTaskName] = useState("");
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const {
     phase,
@@ -35,6 +39,8 @@ export default function PomodoroPage() {
     needsAuth,
     clearNeedsAuth,
   } = usePomodoroSession(taskName);
+
+  useTick(isRunning);
 
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
 
@@ -120,6 +126,25 @@ export default function PomodoroPage() {
 className="w-full text-center text-sm font-medium bg-transparent border-b-2 border-brand-tomato/40 outline-none py-2 text-(--text-primary) placeholder:text-(--text-muted) placeholder:font-normal focus:border-brand-tomato transition-colors duration-200"
             />
             <PomodoroConfigPanel config={config} onChange={setConfig} />
+            {isAuthenticated && (
+              <PresetSelector
+                technique="pomodoro"
+                currentConfig={{
+                  focusSec: config.focusSec,
+                  shortBreakSec: config.shortBreakSec,
+                  longBreakSec: config.longBreakSec,
+                  pomodorosTarget: config.pomodorosTarget,
+                }}
+                onApplyPreset={(c) =>
+                  setConfig({
+                    focusSec: Number(c.focusSec) || config.focusSec,
+                    shortBreakSec: Number(c.shortBreakSec) || config.shortBreakSec,
+                    longBreakSec: Number(c.longBreakSec) || config.longBreakSec,
+                    pomodorosTarget: Number(c.pomodorosTarget) || config.pomodorosTarget,
+                  })
+                }
+              />
+            )}
           </>
         )}
 

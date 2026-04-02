@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: "Flowtime", route: ROUTES.FLOWTIME },
   { label: "Time Budget", route: ROUTES.BOLSA },
   { label: "Sessions", route: ROUTES.SESSIONS },
+  { label: "Settings", route: ROUTES.SETTINGS },
 ];
 
 export function Header() {

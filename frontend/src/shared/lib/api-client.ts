@@ -21,10 +21,12 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Manejar 401: limpiar sesión y redirigir a login
+// Excluir endpoints de auth para que los formularios de login/register manejen el error
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    const isAuthEndpoint = error.config?.url?.includes('/auth/');
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       useAuthStore.getState().logout();
       window.location.href = ROUTES.LOGIN;
     }

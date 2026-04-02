@@ -38,6 +38,7 @@ interface UsePomodoroTimerReturn {
  */
 export function usePomodoroTimer(
   onFocusComplete?: (phaseSec: number) => void,
+  onBreakComplete?: () => void,
 ): UsePomodoroTimerReturn {
   const [phase, setPhase] = useState<PomodoroPhase>("idle");
   const [pomodorosCompleted, setPomodorosCompleted] = useState(0);
@@ -65,9 +66,10 @@ export function usePomodoroTimer(
       setPomodorosCompleted(next);
       setPhase(next % config.pomodorosTarget === 0 ? "long_break" : "short_break");
     } else {
+      onBreakComplete?.();
       setPhase("focus");
     }
-  }, [phase, pomodorosCompleted, config, onFocusComplete]);
+  }, [phase, pomodorosCompleted, config, onFocusComplete, onBreakComplete]);
 
   const { secondsLeft, status, start, pause, reset } = useTimer({
     initialSeconds: getPhaseDuration(phase),
