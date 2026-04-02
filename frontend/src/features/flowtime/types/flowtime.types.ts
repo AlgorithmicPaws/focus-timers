@@ -11,8 +11,8 @@ export const DEFAULT_FLOWTIME_CONFIG: FlowtimeConfig = {
 };
 
 export const FLOWTIME_PRESETS: Record<string, FlowtimeConfig> = {
+  "Relaxed (÷3)":  { breakModel: "proportional", breakRatio: 3 },
   "Standard (÷5)": { breakModel: "proportional", breakRatio: 5 },
-  "Intense (÷7)": { breakModel: "proportional", breakRatio: 7 },
-  "Relaxed (÷3)": { breakModel: "proportional", breakRatio: 3 },
-  "Stepped": { breakModel: "stepped", breakRatio: 5 },
+  "Intense (÷7)":  { breakModel: "proportional", breakRatio: 7 },
+  "Stepped":       { breakModel: "stepped", breakRatio: 5 },
 };

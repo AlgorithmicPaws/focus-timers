@@ -1,13 +1,16 @@
+import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useBolsaTimer } from "@/features/timer/hooks/useBolsaTimer";
 import { sessionsService } from "@/features/sessions/services/sessions.service";
 import { useAuthGuardedSave } from "@/shared/hooks/useAuthGuardedSave";
+import { useSound } from "@/shared/hooks/useSound";
 import { getDayOfWeek, getCurrentHour } from "@/features/timer/utils/time.utils";
 import type { BolsaConfig } from "@/features/bolsa/types/bolsa.types";
 
 export function useBolsaSession(config: BolsaConfig, taskName?: string) {
   const queryClient = useQueryClient();
   const { guardedSave, needsAuth, clearNeedsAuth } = useAuthGuardedSave();
+  const { play } = useSound();
 
   const { mutate: saveSession, isError: saveError } = useMutation({
     mutationFn: sessionsService.create,
@@ -19,6 +22,7 @@ export function useBolsaSession(config: BolsaConfig, taskName?: string) {
   const timer = useBolsaTimer({
     config,
     onSessionEnd: (data) => {
+      play('alarm-end');
       guardedSave(() =>
         saveSession({
           technique: "bolsa",
@@ -47,5 +51,15 @@ export function useBolsaSession(config: BolsaConfig, taskName?: string) {
     },
   });
 
-  return { ...timer, saveError, needsAuth, clearNeedsAuth };
+  const takePauseWithSound = useCallback(() => {
+    play('alarm-break');
+    timer.takePause();
+  }, [play, timer]);
+
+  const resumeWorkWithSound = useCallback(() => {
+    play('alarm-break');
+    timer.resumeWork();
+  }, [play, timer]);
+
+  return { ...timer, takePause: takePauseWithSound, resumeWork: resumeWorkWithSound, saveError, needsAuth, clearNeedsAuth };
 }

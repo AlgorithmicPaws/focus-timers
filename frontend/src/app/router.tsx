@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ROUTES } from "@/shared/constants/routes";
 import { ProtectedRoute } from "@/shared/components/ProtectedRoute";
 import DashboardPage from "@/pages/DashboardPage";
@@ -8,13 +8,15 @@ import BolsaPage from "@/pages/BolsaPage";
 import SessionsPage from "@/pages/SessionsPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 export const router = createBrowserRouter([
   // Rutas públicas
   { path: ROUTES.LOGIN, element: <LoginPage /> },
   { path: ROUTES.REGISTER, element: <RegisterPage /> },
 
-  // Timers: accesibles sin cuenta — se pide login solo al guardar
+  // Timers y settings: accesibles sin cuenta
+  { path: ROUTES.SETTINGS, element: <SettingsPage /> },
   { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
   { path: ROUTES.POMODORO, element: <PomodoroPage /> },
   { path: ROUTES.FLOWTIME, element: <FlowtimePage /> },
@@ -29,4 +31,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+
+  // 404 — redirect to dashboard
+  { path: "*", element: <Navigate to={ROUTES.DASHBOARD} replace /> },
 ]);

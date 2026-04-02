@@ -4,6 +4,7 @@ export const ROUTES = {
   FLOWTIME: "/timer/flowtime",
   BOLSA: "/timer/bolsa",
   SESSIONS: "/sessions",
+  SETTINGS: "/settings",
   LOGIN: "/login",
   REGISTER: "/register",
 } as const;

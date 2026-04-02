@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePomodoroTimer } from "@/features/timer/hooks/usePomodoroTimer";
 import { sessionsService } from "@/features/sessions/services/sessions.service";
 import { useAuthGuardedSave } from "@/shared/hooks/useAuthGuardedSave";
+import { useSound } from "@/shared/hooks/useSound";
 import type { PomodoroConfig } from "@/features/timer/hooks/usePomodoroTimer";
 
 export function usePomodoroSession(taskName = "") {
@@ -10,6 +11,7 @@ export function usePomodoroSession(taskName = "") {
   const sessionStartRef = useRef<Date | null>(null);
   const totalWorkSecRef = useRef(0);
   const { guardedSave, needsAuth, clearNeedsAuth } = useAuthGuardedSave();
+  const { play } = useSound();
 
   const { mutate: saveSession, isError: saveError } = useMutation({
     mutationFn: sessionsService.create,
@@ -18,12 +20,17 @@ export function usePomodoroSession(taskName = "") {
     },
   });
 
-  // Accumulate work seconds each time a focus phase ends (no auto-save)
+  // Accumulate work seconds + play alarm when a focus phase ends
   const handleFocusComplete = useCallback((phaseSec: number) => {
     totalWorkSecRef.current += phaseSec;
-  }, []);
+    play('alarm-end');
+  }, [play]);
 
-  const timer = usePomodoroTimer(handleFocusComplete);
+  const handleBreakComplete = useCallback(() => {
+    play('alarm-break');
+  }, [play]);
+
+  const timer = usePomodoroTimer(handleFocusComplete, handleBreakComplete);
 
   const start = useCallback(() => {
     if (!sessionStartRef.current) {
@@ -53,6 +60,7 @@ export function usePomodoroSession(taskName = "") {
       const startedAt = sessionStartRef.current ?? new Date();
       const endedAt = new Date();
       const totalWork = totalWorkSecRef.current + extraWorkSec;
+      const { config, pomodorosCompleted } = timer;
 
       guardedSave(() =>
         saveSession({
@@ -65,13 +73,23 @@ export function usePomodoroSession(taskName = "") {
           completed,
           day_of_week: startedAt.getDay() === 0 ? 6 : startedAt.getDay() - 1,
           hour_of_day: startedAt.getHours(),
+          pomodoro_details: {
+            focus_interval_sec: config.focusSec,
+            short_break_sec: config.shortBreakSec,
+            long_break_sec: config.longBreakSec,
+            pomodoros_target: config.pomodorosTarget,
+            pomodoros_completed: pomodorosCompleted,
+            pomodoro_number: pomodorosCompleted + 1,
+            was_voided: !completed,
+            strict_mode: false,
+          },
         }),
       );
 
       sessionStartRef.current = null;
       totalWorkSecRef.current = 0;
     },
-    [saveSession, guardedSave, taskName],
+    [saveSession, guardedSave, taskName, timer],
   );
 
   return {
