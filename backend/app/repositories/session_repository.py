@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session, selectinload
@@ -7,7 +9,9 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.focus_session import FocusSession, PomodoroDetails, Technique
 from app.models.flowtime_details import FlowtimeDetails
 from app.models.bolsa_details import BolsaDetails
-from app.schemas.session_schemas import CreateSessionRequest
+
+if TYPE_CHECKING:
+    from app.schemas.session_schemas import CreateSessionRequest
 
 
 def _get_interval_start(interval: str) -> Optional[datetime]:

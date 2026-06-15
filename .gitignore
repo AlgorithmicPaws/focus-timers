@@ -19,3 +19,6 @@ frontend/**/*.tsbuildinfo
 # System
 .DS_Store
 *.swp
+
+# graphify
+graphify-out/
