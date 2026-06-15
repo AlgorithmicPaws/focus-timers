@@ -1,196 +1,80 @@
 # Focus Timers — Progreso del Proyecto
 
-**Última sesión:** 2026-03-22
+**Última actualización:** 2026-06-12
+
+> El roadmap completo (Fases 1–8) vive en **[`docs/PLAN.md`](docs/PLAN.md)**. Este archivo resume el **estado real** del repositorio. La arquitectura detallada está en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ---
 
 ## ¿Qué es Focus Timers?
 
-App web de productividad con tres técnicas de timer: **Pomodoro**, **Flowtime** y **Bolsa de Tiempo** (diferenciador único). Fase actual: **Fase 1** — infraestructura, auth y Pomodoro.
-
-**Objetivo de Fase 1:** URL pública donde un usuario pueda registrarse, hacer login, correr un timer Pomodoro y ver su historial de sesiones.
+App web de productividad con tres técnicas de timer: **Pomodoro**, **Flowtime** y **Bolsa de Tiempo** (diferenciador único — ninguna otra app la implementa). Deploy en Vercel (frontend) + Railway (backend) + Supabase (PostgreSQL 15).
 
 ---
 
-## Lo que se implementó hoy
+## Estado actual (verificado en el código)
 
-### 1. CLAUDE.md — Contexto completo del proyecto
-Archivo en la raíz con toda la información necesaria para que Claude Code trabaje en el proyecto sin perder contexto:
-- Stack técnico, estructura de carpetas, convenciones de naming
-- Design system (tokens de color, glassmorphism, dark mode)
-- API endpoints de Fase 1, modelos de BD, rutas del frontend
-- Smoke test de Fase 1, checklist de seguridad
+### Implementado y desplegado
 
-### 2. Subagentes de Claude Code (`.claude/agents/`)
-Tres agentes especializados para el proyecto:
-- **`backend.md`** (verde) — FastAPI, SQLAlchemy, Alembic, JWT, pytest
-- **`frontend.md`** (azul) — React 18, TypeScript strict, Zustand, Tailwind, Vitest
-- **`devops.md`** (naranja) — Railway, Vercel, GitHub Actions, Supabase, costos
+**Frontend (React 18 + Vite + TS strict, Feature-Sliced Design):**
+- **3 técnicas completas** con sus hooks de sesión sobre timers genéricos:
+  - `features/pomodoro/` → `usePomodoroSession.ts`
+  - `features/flowtime/` → `useFlowtimeSession.ts`
+  - `features/bolsa/` → `useBolsaSession.ts`
+  - base en `features/timer/hooks/` (`useTimer`, `usePomodoroTimer`, `useFlowtimeTimer`, `useBolsaTimer`)
+- **8 páginas**: Dashboard, Pomodoro, Flowtime, Bolsa, Sessions, Settings, Login, Register.
+- **Dashboard con analítica** (recharts 3): `FocusChart.tsx`, `StatsGrid.tsx`, `TechniqueBreakdown.tsx`.
+- **Settings + presets** (`features/settings/`), **sonidos** (`shared/hooks/useSound.ts`), **dark mode** (`ThemeToggle.tsx`).
+- **Guards de navegación y guardado**: `useNavigationGuard.ts`, `useAuthGuardedSave.ts`, `AuthPrompt.tsx`, `NavigationBlockerModal.tsx`.
+- **Rutas públicas por diseño**: timers, dashboard y settings son accesibles sin cuenta; solo `/sessions` está tras `ProtectedRoute`. Guardar una sesión es lo que pide login.
 
-### 3. Backend — FastAPI completo
+**Backend (FastAPI + SQLAlchemy 2.0, Router→Service→Repository→Model):**
+- 5 routers: `auth`, `users`, `sessions`, `settings`, `health`.
+- JWT HS256 + `slowapi` (rate limit en login).
+- Stats agregadas vía SQL en BD (`SessionRepository.get_raw_stats_by_user`), nunca cargando filas crudas.
+- **4 migraciones Alembic** (`backend/migrations/versions/`): `1bc760c13d7b` schema inicial · `76a1b31a6395` settings+presets · `a2f9c1d4e8b3` detalles flowtime/bolsa · `b3e7f2a91c04` índices compuestos.
+- Modelo `focus_sessions` rico desde el día uno (`task_name`, `task_tags`, `project`, duraciones, `interruptions`, `day_of_week`, `hour_of_day`, `mood_rating`, `technique_config`) + tablas detalle 1:1 (`pomodoro_details`, `flowtime_details`, `bolsa_details`) + `user_settings` y `presets`.
 
-**Arquitectura:** Router → Service → Repository → Model (sin saltar capas)
-
-| Archivo | Propósito |
-|---------|-----------|
-| `app/core/config.py` | Pydantic Settings — falla al inicio si faltan env vars |
-| `app/core/database.py` | SQLAlchemy engine + `get_db` dependency |
-| `app/core/security.py` | JWT (python-jose) + bcrypt (passlib) |
-| `app/core/dependencies.py` | `get_current_user` — extrae user del JWT |
-| `app/core/exceptions.py` | HTTPExceptions tipadas (NotFound, Conflict, etc.) |
-| `app/models/user.py` | Modelo `User` con SQLAlchemy 2.0 `Mapped[]` |
-| `app/models/focus_session.py` | `FocusSession` + `PomodoroDetails` + enum `Technique` |
-| `app/schemas/auth_schemas.py` | DTOs: RegisterRequest, LoginRequest, TokenResponse |
-| `app/schemas/user_schemas.py` | UserResponse, UpdateUserRequest |
-| `app/schemas/session_schemas.py` | CreateSessionRequest, SessionResponse, SessionListResponse |
-| `app/repositories/user_repository.py` | CRUD de usuarios (solo acceso a datos) |
-| `app/repositories/session_repository.py` | CRUD de sesiones con `selectinload` para detalles |
-| `app/services/auth_service.py` | Register, login, refresh — lógica de negocio |
-| `app/services/user_service.py` | Get/update/delete perfil |
-| `app/services/session_service.py` | Crear, listar, eliminar sesiones |
-| `app/routers/auth.py` | POST /register, /login (rate limit 10/min), /refresh |
-| `app/routers/users.py` | GET/PUT/DELETE /users/me |
-| `app/routers/sessions.py` | POST/GET /sessions/, DELETE /sessions/{id} |
-| `app/routers/health.py` | GET /health — verifica conexión a BD |
-| `app/main.py` | FastAPI app, CORS, rate limiting, registro de routers |
-| `migrations/env.py` | Alembic configurado, importa todos los modelos |
-| `tests/conftest.py` | Fixtures con SQLite en memoria para tests aislados |
-
-**Endpoints disponibles:**
-```
-POST   /api/v1/auth/register
-POST   /api/v1/auth/login        ← rate limit 10/min
-POST   /api/v1/auth/refresh
-GET    /api/v1/users/me
-PUT    /api/v1/users/me
-DELETE /api/v1/users/me
-POST   /api/v1/sessions/
-GET    /api/v1/sessions/         ← soporta ?technique=&limit=&offset=
-DELETE /api/v1/sessions/{id}
-GET    /health
-```
-
-### 4. Frontend — React 18 + TypeScript
-
-**Arquitectura:** Feature-Sliced Design (`features/` · `pages/` · `shared/` · `app/`)
-
-| Archivo | Propósito |
-|---------|-----------|
-| `src/index.css` | CSS variables (tokens claro/oscuro), import Quicksand |
-| `src/main.tsx` | Entry point |
-| `src/app/App.tsx` | QueryClientProvider + RouterProvider |
-| `src/app/router.tsx` | 5 rutas: `/`, `/timer/pomodoro`, `/sessions`, `/login`, `/register` |
-| `src/shared/lib/api-client.ts` | Axios con interceptor JWT y redirect a /login en 401 |
-| `src/shared/lib/query-client.ts` | TanStack Query client (stale 5min) |
-| `src/shared/constants/routes.ts` | Constantes de rutas |
-| `src/shared/components/ProtectedRoute.tsx` | Redirige a /login si no hay token |
-| `src/shared/components/ui/Button.tsx` | 4 variantes: cta, glass, secondary, danger |
-| `src/shared/components/layout/Header.tsx` | Nav fija con links y botón logout |
-| `src/features/auth/types/auth.types.ts` | Interfaces User, TokenResponse, LoginRequest, etc. |
-| `src/features/auth/store/auth.store.ts` | Zustand store persistido en localStorage |
-| `src/features/auth/services/auth.service.ts` | register, login, getMe |
-| `src/features/auth/components/LoginForm.tsx` | Form con react-hook-form + Zod |
-| `src/features/auth/components/RegisterForm.tsx` | Form con validación (email, password con número) |
-| `src/features/timer/hooks/useTimer.ts` | Countdown genérico — 100% cliente, sin side effects |
-| `src/features/timer/hooks/usePomodoroTimer.ts` | Máquina de estados: idle→focus→break→long_break |
-| `src/features/timer/components/TimerDisplay.tsx` | MM:SS responsive (5rem → 8rem → 12rem) |
-| `src/features/pomodoro/hooks/usePomodoroSession.ts` | Orquesta timer + guarda sesión al completar |
-| `src/features/sessions/types/session.types.ts` | Interfaces FocusSession, CreateSessionPayload, etc. |
-| `src/features/sessions/services/sessions.service.ts` | create, list, delete sesiones |
-| `src/features/sessions/components/SessionCard.tsx` | Tarjeta de sesión con técnica, duración, fecha |
-| `src/pages/LoginPage.tsx` | Página de login |
-| `src/pages/RegisterPage.tsx` | Página de registro |
-| `src/pages/DashboardPage.tsx` | Dashboard con acceso a Pomodoro y link a sesiones |
-| `src/pages/PomodoroPage.tsx` | Página completa: fondo de color por fase + glassmorphism card |
-| `src/pages/SessionsPage.tsx` | Historial con TanStack Query + delete |
-
-**Diseño del timer (PomodoroPage):**
-- Fondo cambia de color por fase con transición 800ms
-- `bg-brand-focus` (#ff7b61) → focus
-- `bg-brand-break` (#fbbf24) → short break
-- `bg-brand-longbreak` (#7ab854) → long break
-- Card glassmorphism flotante sobre el fondo
-
-### 5. Infraestructura y CI/CD
-
-| Archivo | Propósito |
-|---------|-----------|
-| `.github/workflows/ci.yml` | Pipeline CI con dos jobs paralelos |
-| `vercel.json` | Configuración deploy frontend |
-| `.gitignore` | Python + Node + env files |
-| `backend/Procfile` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| `backend/.env.example` | Template de variables de entorno |
-| `frontend/.env.local.example` | Template variables Vite |
-
-**CI Pipeline (`.github/workflows/ci.yml`):**
-- **Job Backend:** ruff lint → alembic migrations → pytest (contra PostgreSQL 15 real)
-- **Job Frontend:** TypeScript check → Vite build production
-- Corre en PRs a `main` y `develop`, y en push a `develop`
-- Cancela runs anteriores del mismo branch (concurrency)
-
-**Protección de ramas (GitHub):**
-```
-main    → require PR + 1 approval + CI verde + no force push
-develop → require CI verde + no force push
-```
+**CI (`.github/workflows/ci.yml`):**
+- Job backend: ruff + alembic + pytest contra Postgres 15 real.
+- Job frontend: typecheck + build.
+- **No hay E2E todavía** (se añade en Plan Fase 3).
 
 ---
 
-## Estado del repositorio
+## Fase 1 del plan — Auditoría y saneamiento (en curso)
 
-```
-github.com/AlgorithmicPaws/focus-timers
+Ver [`docs/PLAN.md` § Fase 1](docs/PLAN.md). Trabajo de saneamiento de deuda técnica:
 
-main                         ← protegida, auto-deploy Railway + Vercel
-develop                      ← protegida, integración
-feature/fase-1-auth-pomodoro ← rama activa ← estás aquí
-```
+- [x] **Docs honestos** — `CLAUDE.md` y `PROGRESS.md` actualizados al estado real (3 técnicas, 8 páginas, rutas públicas/protegidas correctas, sin "Fase 1 = solo Pomodoro").
+- [x] **`anthropic` eliminado** de `backend/requirements.txt` (sin uso en código; la IA de Fase 7 usará OpenRouter).
+- [x] **`psycopg2` → `psycopg2-binary`** en `backend/requirements.txt`.
+- [x] **`@types/node` deduplicado** en `frontend/package.json` (queda solo `^22.0.0`).
+- [x] **Ciclo de import roto** en `backend/app/repositories/session_repository.py` (`CreateSessionRequest` movido a `TYPE_CHECKING` + `from __future__ import annotations`).
+- [x] **Bugs #6 y #7 documentados** (no arreglados) como insumo de la suite E2E rojo→verde de la Fase 3:
+  - **#6** `useTimer.ts` decrementa estado con `setInterval(1000)` sin anclar a `Date.now()` → deriva en pestañas de fondo.
+  - **#7** `api-client.ts` hace `window.location.href` (recarga dura) ante 401 → destruye un timer en curso.
 
-**Commits:**
-```
-1adb1c1  ci: add GitHub Actions workflow for backend and frontend
-89b0de6  feat: Phase 1 scaffold - backend FastAPI + frontend React
-```
-
----
-
-## Qué falta para completar Fase 1
-
-### Pendiente obligatorio antes del primer deploy
-
-- [ ] **Migración Alembic inicial** — correr `alembic revision --autogenerate -m "initial schema"` con la BD de Supabase conectada
-- [ ] **Configurar Railway** — subir variables: `DATABASE_URL`, `JWT_SECRET_KEY`, `FRONTEND_URL`, `ENVIRONMENT=production`
-- [ ] **Configurar Vercel** — subir variable: `VITE_API_URL` con la URL de Railway
-- [ ] **Instalar dependencias frontend** — `npm install` (no hay `package-lock.json` aún)
-- [ ] **Tests de integración** — al menos happy path de auth y sessions
-
-### Smoke test de Fase 1 (criterio de éxito)
-1. Abrir URL de Vercel → redirige a `/login`
-2. Registrarse → redirige a Dashboard, nombre visible en header
-3. Ir a `/timer/pomodoro` → muestra 25:00, botón Iniciar
-4. Timer llega a 0 → fase cambia a short break (fondo ámbar)
-5. Terminar sesión → aparece en `/sessions`
-6. Logout → redirige a `/login`, token eliminado
-7. Login de nuevo → historial sigue visible
+### Verificaciones pendientes de correr en tu entorno (Node no disponible en el shell de Claude)
+- [ ] `cd frontend && npm install` — regenerar `package-lock.json` (todavía resuelve `@types/node` a 25.5.0).
+- [ ] `cd frontend && npm run typecheck && npm run build` — confirmar verde sin warning de dependencia duplicada.
+- [ ] `cd backend && source .venv/bin/activate && python -c "import app.repositories.session_repository"` — confirmar import sin ciclo (el fix es estático; falta correrlo con deps instaladas).
 
 ---
 
-## Stack de referencia rápida
+## Próximas fases (resumen — detalle en `docs/PLAN.md`)
 
-```
-Backend:   FastAPI + Python 3.12 + SQLAlchemy 2.0 + Alembic + psycopg2
-           python-jose + passlib + slowapi + Pydantic v2
-           Deploy: Railway Hobby ($5/mes)
+| Fase | Objetivo | Bloqueo |
+|------|----------|---------|
+| 2 | Rendimiento con métricas objetivo (Lighthouse ≥90, chunk ≤150KB, p95 ≤150ms) | — |
+| 3 | Suite E2E Playwright (bugs #6/#7 rojo→verde) | — |
+| 4 | Internacionalización (react-i18next, es/en) | — |
+| 5 | Backlog UX P0/P1/P2 | — |
+| 6 | Música de ambiente (pistas propias Suno en S3/CloudFront, ≈$0/mes) | — |
+| 7 | Sugerencia de timers con IA (Capa 1 heurística siempre; Capa 2 IA opcional) | Capa 2: `OPENROUTER_API_KEY` |
+| 8 | Migración a AWS Free Tier | Cuenta AWS + decisión explícita |
 
-Frontend:  React 18 + Vite + TypeScript strict
-           Zustand + TanStack Query + React Hook Form + Zod + Axios
-           Tailwind CSS v4 (@tailwindcss/vite)
-           Deploy: Vercel (free tier)
-
-Database:  PostgreSQL 15 — Supabase (free tier ~500MB)
-
-CI/CD:     GitHub Actions → Railway + Vercel auto-deploy desde main
-```
+**Camino crítico:** 1 → 3 → 4 → 5. Fases 2, 6 y 7 (Capa 1) son paralelizables tras la Fase 1.
 
 ---
 
@@ -210,13 +94,9 @@ cd frontend
 npm install
 npm run dev            # → http://localhost:3000
 
-# Generar nueva migración
-cd backend && alembic revision --autogenerate -m "descripcion"
-
 # Tests backend
 cd backend && pytest tests/ -v
 
-# Rama para nueva tarea
-git checkout develop
-git checkout -b feature/fase-1-nombre-tarea
+# Nueva migración
+cd backend && alembic revision --autogenerate -m "descripcion"
 ```
