@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session, selectinload
@@ -7,7 +9,9 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.focus_session import FocusSession, PomodoroDetails, Technique
 from app.models.flowtime_details import FlowtimeDetails
 from app.models.bolsa_details import BolsaDetails
-from app.schemas.session_schemas import CreateSessionRequest
+
+if TYPE_CHECKING:
+    from app.schemas.session_schemas import CreateSessionRequest
 
 
 def _get_interval_start(interval: str) -> Optional[datetime]:
@@ -111,7 +115,7 @@ class SessionRepository:
             self.db.query(
                 FocusSession.technique,
                 func.count(FocusSession.id).label("total_sessions"),
-                func.sum(case((FocusSession.completed == True, 1), else_=0)).label("completed_sessions"),
+                func.sum(case((FocusSession.completed.is_(True), 1), else_=0)).label("completed_sessions"),
                 func.sum(FocusSession.total_work_seconds).label("total_work_seconds"),
             )
             .filter(*base_filter)

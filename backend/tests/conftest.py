@@ -26,6 +26,18 @@ def setup_db():
     Base.metadata.drop_all(bind=engine_test)
 
 
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Aísla el rate limiter por test: su almacenamiento en memoria es global
+    a la sesión de pytest, así que sin reset las llamadas a /auth/register se
+    acumulan contra el límite de 5/min y disparan 429 en tests posteriores."""
+    from app.routers.auth import limiter
+
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
 @pytest.fixture
 def db():
     session = TestingSessionLocal()
