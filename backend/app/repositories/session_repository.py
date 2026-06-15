@@ -115,7 +115,7 @@ class SessionRepository:
             self.db.query(
                 FocusSession.technique,
                 func.count(FocusSession.id).label("total_sessions"),
-                func.sum(case((FocusSession.completed == True, 1), else_=0)).label("completed_sessions"),
+                func.sum(case((FocusSession.completed.is_(True), 1), else_=0)).label("completed_sessions"),
                 func.sum(FocusSession.total_work_seconds).label("total_work_seconds"),
             )
             .filter(*base_filter)
