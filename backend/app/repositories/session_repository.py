@@ -87,19 +87,29 @@ class SessionRepository:
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[FocusSession], int]:
-        query = self._base_query().filter(FocusSession.user_id == user_id)
-
+        # Filtros compartidos entre el count y la query de datos.
+        filters = [FocusSession.user_id == user_id]
         if technique:
-            query = query.filter(FocusSession.technique == technique)
+            filters.append(FocusSession.technique == technique)
         if interval:
             start = _get_interval_start(interval)
             if start:
-                query = query.filter(FocusSession.started_at >= start)
+                filters.append(FocusSession.started_at >= start)
         if project:
-            query = query.filter(FocusSession.project == project)
+            filters.append(FocusSession.project == project)
 
-        total = query.count()
-        sessions = query.order_by(FocusSession.started_at.desc()).limit(limit).offset(offset).all()
+        # COUNT(*) directo: sin selectinload (las detail tables no aportan al total)
+        # ni subconsulta envolvente como haría query.count() sobre la entidad completa.
+        total = self.db.query(func.count(FocusSession.id)).filter(*filters).scalar() or 0
+
+        sessions = (
+            self._base_query()
+            .filter(*filters)
+            .order_by(FocusSession.started_at.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
         return sessions, total
 
     def get_raw_stats_by_user(self, user_id: int, interval: str | None = None) -> dict:
