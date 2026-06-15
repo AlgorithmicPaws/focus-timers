@@ -4,8 +4,9 @@
 
 Focus Timers is a productivity web app implementing three focus timer techniques: **Pomodoro**, **Flowtime**, and **Bolsa de Tiempo** (Time Budget). Bolsa de Tiempo is a key differentiator — no other app implements it.
 
-**Current phase: Phase 1** — Infrastructure + Auth + Pomodoro
-**Goal:** Public URL where a user can register, log in, run a Pomodoro timer, and view session history.
+**Status:** The three techniques, the analytics dashboard, settings + presets, sounds and dark mode are all implemented and deployed. The roadmap for what comes next (performance, E2E, i18n, UX backlog, ambient music, AI timer suggestions, AWS migration) lives in [`docs/PLAN.md`](docs/PLAN.md). The original "Phase 1" scope (auth + Pomodoro + history) is complete.
+
+**Design intent:** the timers, the dashboard and settings are **public by design** — anyone can try a timer without an account; saving a session is what requires login (handled by `useAuthGuardedSave.ts` + `AuthPrompt.tsx`). Only `/sessions` (the history) is behind `ProtectedRoute`.
 
 ---
 
@@ -36,8 +37,12 @@ focus-timers/              # Monorepo root
 │       │   ├── auth/      # Login, Register, auth store, auth service
 │       │   ├── timer/     # Base timer logic (useTimer, TimerDisplay, etc.)
 │       │   ├── pomodoro/  # Pomodoro config, counter, usePomodoroSession
-│       │   └── sessions/  # Session list, cards, sessions service
-│       ├── pages/         # Route-level components (DashboardPage, PomodoroPage, etc.)
+│       │   ├── flowtime/  # Flowtime config + useFlowtimeSession
+│       │   ├── bolsa/     # Bolsa de Tiempo config + useBolsaSession
+│       │   ├── settings/  # Settings panels + presets
+│       │   └── sessions/  # Session list, cards, charts (recharts), sessions service
+│       ├── pages/         # 8 route-level pages: Dashboard, Pomodoro, Flowtime,
+│       │                  #   Bolsa, Sessions, Settings, Login, Register
 │       ├── shared/        # Shared UI, hooks, lib, constants, types
 │       └── assets/        # images/, sounds/
 ├── backend/               # FastAPI app
@@ -86,8 +91,9 @@ JWT_ALGORITHM=HS256
 JWT_EXPIRE_MINUTES=10080
 FRONTEND_URL=http://localhost:3000
 ENVIRONMENT=development
-ANTHROPIC_API_KEY=   # Leave empty until Phase 4
 ```
+
+> The AI timer-suggestion feature (Plan Fase 7) uses **OpenRouter**, not Anthropic. `OPENROUTER_API_KEY` is only needed to enable the optional Layer 2 (rationale rewriting); the heuristic engine works without it.
 
 **Frontend (`.env.local` / Vercel):**
 ```
@@ -176,7 +182,7 @@ Activated by adding `class="dark"` to `<html>`. Toggle via `document.documentEle
 
 ---
 
-## Backend API — Phase 1 Endpoints
+## Backend API — Endpoints
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -187,15 +193,23 @@ Activated by adding `class="dark"` to `<html>`. Toggle via `document.documentEle
 | PUT | `/api/v1/users/me` | JWT | Update name or password |
 | DELETE | `/api/v1/users/me` | JWT | Delete account |
 | POST | `/api/v1/sessions/` | JWT | Save completed session |
-| GET | `/api/v1/sessions/` | JWT | List sessions (supports `?technique=&limit=&offset=`) |
+| GET | `/api/v1/sessions/` | JWT | List sessions (supports `?technique=&project=&limit=&offset=`) |
 | DELETE | `/api/v1/sessions/{id}` | JWT | Delete a session |
+| GET | `/api/v1/settings/` | JWT | Get user settings |
+| PUT | `/api/v1/settings/` | JWT | Update user settings |
+| GET | `/api/v1/settings/presets` | JWT | List timer presets |
+| POST | `/api/v1/settings/presets` | JWT | Create a preset |
+| PUT | `/api/v1/settings/presets/{id}` | JWT | Update a preset |
+| DELETE | `/api/v1/settings/presets/{id}` | JWT | Delete a preset |
 | GET | `/health` | No | Health check |
 
-`/docs` (Swagger) is disabled in `ENVIRONMENT=production`.
+`/docs` (Swagger) is disabled in `ENVIRONMENT=production`. Stats for the dashboard are aggregated in SQL (`SessionRepository.get_raw_stats_by_user`), not by loading raw rows.
 
 ---
 
-## Database Models (Phase 1)
+## Database Models
+
+Migrations live in `backend/migrations/versions/`: `1bc760c13d7b` (initial schema), `76a1b31a6395` (user settings + presets), `a2f9c1d4e8b3` (flowtime/bolsa details), `b3e7f2a91c04` (composite indexes).
 
 ### `users`
 `id, name, email (unique), hashed_password, is_active, created_at, updated_at`
@@ -203,10 +217,16 @@ Activated by adding `class="dark"` to `<html>`. Toggle via `document.documentEle
 ### `focus_sessions`
 `id, user_id (FK→users), technique (enum: pomodoro/flowtime/bolsa), task_name, task_tags (JSON), project, started_at, ended_at, total_work_seconds, total_break_seconds, completed, interruptions (JSON), technique_config (JSON), day_of_week (0=Mon), hour_of_day, mood_rating, created_at`
 
-### `pomodoro_details`
-`id, session_id (FK→focus_sessions, unique), focus_interval_sec, short_break_sec, long_break_sec, pomodoros_target, pomodoros_completed, pomodoro_number, was_voided, strict_mode`
+### Per-technique detail tables (1:1 with `focus_sessions`)
+- **`pomodoro_details`** — `focus_interval_sec, short_break_sec, long_break_sec, pomodoros_target, pomodoros_completed, pomodoro_number, was_voided, strict_mode`
+- **`flowtime_details`** — flowtime-specific config/metrics
+- **`bolsa_details`** — Bolsa de Tiempo budget config/metrics
 
-> All fields are created in the Phase 1 migration even if not used until later phases.
+### Settings & presets
+- **`user_settings`** — per-user preferences (1:1 with `users`)
+- **`presets`** — saved timer configurations per user
+
+> The rich `focus_sessions` schema (interruptions, hour_of_day, mood_rating, technique_config, etc.) was created up front and is the direct input for the AI suggestion feature (Plan Fase 7). No retroactive migrations.
 
 ---
 
@@ -225,36 +245,46 @@ Activated by adding `class="dark"` to `<html>`. Toggle via `document.documentEle
 ### Timer hooks
 - `features/timer/hooks/useTimer.ts` — generic countdown with start/pause/reset
 - `features/timer/hooks/usePomodoroTimer.ts` — phase state machine (idle → focus → short_break → long_break → …)
-- `features/pomodoro/hooks/usePomodoroSession.ts` — orchestrates timer + saves to API on session end
+- `features/timer/hooks/useFlowtimeTimer.ts` — Flowtime work/rest cycle
+- `features/timer/hooks/useBolsaTimer.ts` — Bolsa de Tiempo budget countdown
+- `features/pomodoro/hooks/usePomodoroSession.ts`, `features/flowtime/hooks/useFlowtimeSession.ts`, `features/bolsa/hooks/useBolsaSession.ts` — orchestrate timer + save to API on session end (via `useAuthGuardedSave.ts`)
+
+> ⚠️ Known bugs documented for Plan Fase 3 (red→green E2E), **not yet fixed** — see `docs/PLAN.md` "Estado actual":
+> - **Bug #6** `useTimer.ts` uses `setInterval(1000)` decrementing state instead of anchoring to `Date.now()` → drifts when the tab is backgrounded (browser throttling).
+> - **Bug #7** `api-client.ts` does a hard `window.location.href = ROUTES.LOGIN` on 401 → reloads the page and destroys a running timer.
 
 ### Routing
-Protected routes via `ProtectedRoute` component. Unauthenticated users are redirected to `/login`.
+Defined in `app/router.tsx` (constants in `shared/constants/routes.ts`). **Timers, dashboard and settings are public by design** so users can try the app without an account; only `/sessions` (history) is wrapped in `ProtectedRoute`, which redirects unauthenticated users to `/login`. Saving a session from a public timer triggers the auth prompt (`useAuthGuardedSave.ts` + `AuthPrompt.tsx`).
 
 | Path | Page | Protected |
 |------|------|-----------|
-| `/` | DashboardPage | Yes |
-| `/timer/pomodoro` | PomodoroPage | Yes |
-| `/sessions` | SessionsPage | Yes |
+| `/` | DashboardPage | No |
+| `/timer/pomodoro` | PomodoroPage | No |
+| `/timer/flowtime` | FlowtimePage | No |
+| `/timer/bolsa` | BolsaPage | No |
+| `/settings` | SettingsPage | No |
+| `/sessions` | SessionsPage | **Yes** |
 | `/login` | LoginPage | No |
 | `/register` | RegisterPage | No |
+| `*` | → redirect to `/` | — |
 
 ---
 
-## Phase 1 Success Criteria (Smoke Test)
+## Core Smoke Test
 
-1. Open Vercel URL → redirects to `/login`
-2. Register with valid email/password → redirects to Dashboard, username visible in header
-3. Navigate to `/timer/pomodoro` → timer shows 25:00, Start button visible
-4. Set to 1 minute, click Start → countdown runs, phase background is `brand-focus` orange
-5. Timer reaches 00:00 → phase changes to short break (`brand-break` amber)
-6. End session → session saved
+1. Open the app URL → Dashboard loads (public, no redirect)
+2. Navigate to `/timer/pomodoro` → timer shows 25:00, Start button visible
+3. Set to 1 minute, click Start → countdown runs, phase background is `brand-focus` orange
+4. Timer reaches 00:00 → phase changes to short break (`brand-break` amber)
+5. End session while logged out → `AuthPrompt` appears (saving requires login)
+6. Register / log in → session saves, username visible in header
 7. Go to `/sessions` → session appears with technique "Pomodoro", duration, timestamp
-8. Logout → redirected to `/login`, token removed from localStorage
-9. Log in again → Dashboard accessible, session history still visible
+8. Logout → `/sessions` now redirects to `/login`, token removed from localStorage
+9. Log in again → session history still visible
 
 ---
 
-## Security Checklist (Phase 1)
+## Security Checklist
 
 - [ ] `JWT_SECRET_KEY` is 64 chars, set only in Railway (never in code)
 - [ ] `DATABASE_URL` set only in Railway
@@ -268,7 +298,7 @@ Protected routes via `ProtectedRoute` component. Unauthenticated users are redir
 
 ## Important Notes
 
-- **Phases 2–4 are out of scope for now.** Do not implement Flowtime, Bolsa de Tiempo, settings, presets, AI features, or analytics until Phase 2+ specs are provided.
+- **Roadmap lives in [`docs/PLAN.md`](docs/PLAN.md).** The three techniques, dashboard, settings and presets are already implemented; upcoming work (performance, E2E, i18n, UX, music, AI suggestions, AWS) is sequenced there. Two stop conditions never block the critical path: `OPENROUTER_API_KEY` (only the optional AI Layer 2) and an active AWS account (only the migration phase).
 - **Do not add `connect_args={"sslmode": "require"}` for local development** — only needed in production. Use an env check or leave it configurable.
 - Comments in code: English for variable/function/type names; Spanish for complex business logic explanations. Python docstrings in Spanish.
 - The `@fontsource-variable/quicksand` package should be imported in `main.tsx` or `index.css`, not loaded from Google Fonts CDN in production.
