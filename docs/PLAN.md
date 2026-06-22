@@ -1,6 +1,6 @@
 # Plan de Implementación — Focus Timers (versión final)
 
-**Fecha:** 2026-06-12
+**Fecha:** 2026-06-12 · **Revisión de secuenciación:** 2026-06-21 (ver [Orden de ejecución revisado](#orden-revisado))
 **Repo:** `/home/sergio/zembu/proyectos/focus-timers` (monorepo: `frontend/` React 18 + Vite 5 + TS strict, `backend/` FastAPI 0.115 + SQLAlchemy 2.0, PostgreSQL 15 en Supabase, deploy Vercel + Railway)
 
 ## Índice de fases
@@ -17,9 +17,37 @@
 **Condiciones de parada globales** (bloqueos externos que NO deben frenar el resto del plan):
 
 - **(a) Fase 7:** `OPENROUTER_API_KEY` — solo necesaria para la Capa 2 (realce IA); toda la Capa 1 se implementa sin ella.
-- **(b) Fase 8:** cuenta AWS activa + decisión explícita de migrar desde Vercel/Railway.
+- **(b) Fase 8:** cuenta AWS activa. La **decisión explícita de migrar ya está tomada** (2026-06-21, para publicar el demo); solo queda como prerequisito operativo disponer de la cuenta AWS.
 
 > Nota: la **Fase 6 (música) ya NO tiene condición de parada**. Se descartó Spotify/OAuth en favor de pistas propias (lo-fi/jazz/soul) generadas con **Suno** y servidas desde **S3 + CloudFront**. Coste: ~$10 one-time (1 mes de Suno Pro para generar la librería con licencia comercial) + ≈$0/mes (S3 Free Tier + 1 TB/mes always-free de CloudFront).
+
+---
+
+<a name="orden-revisado"></a>
+## Orden de ejecución (revisado 2026-06-21)
+
+> **Cambio respecto a la secuenciación original.** El objetivo inmediato es **publicar un demo en AWS**. Para conseguirlo se adelanta la **Fase 3 (E2E)** como red de seguridad de la migración y la **Fase 5 (UX)** como pulido del demo, **antes** de la **Fase 8 (AWS)**. La **Fase 4 (i18n)**, la **Fase 6 (música)** y la **Fase 7 (IA)** pasan a *después* del demo. El plazo deja de ser "una semana": puede dilatarse, pero se respeta este orden.
+
+**Estado de partida:** Fase 1 ✅ y Fase 2 ✅ ya entregadas (mergeadas en `main`).
+
+| Orden | Fase (ID estable) | Rol en el plan revisado | Estado |
+|-------|-------------------|--------------------------|--------|
+| 1 | Fase 1 — Saneamiento | Base | ✅ Hecha |
+| 2 | Fase 2 — Rendimiento | Base | ✅ Hecha |
+| 3 | **Fase 3 — E2E Playwright** | Red de seguridad de la migración | ⏭️ Siguiente |
+| 4 | **Fase 5 — Backlog UX** | Pulido del demo | Pendiente |
+| 5 | **Fase 8 — Migración AWS** | Publicar el demo | Pendiente |
+| 6 | Fase 4 — i18n | Post-demo (barre también los textos nuevos de la Fase 5) | Pendiente |
+| 7 | Fase 6 — Música | Post-demo (reutiliza el S3/CloudFront de la cuenta migrada) | Pendiente |
+| 8 | Fase 7 — IA (Capa 1) | Post-demo | Pendiente |
+
+> Los números de fase (Fase 1…8) se mantienen como **identificadores estables** (el código y el historial git ya los referencian); lo que cambia es el **orden de ejecución**, no la numeración.
+
+**Implicaciones de dependencias por el reordenamiento:**
+
+- **Fase 5 antes que Fase 4 (dependencia invertida):** los textos nuevos de la Fase 5 se escriben con la convención actual (mezcla es/en como hoy); la Fase 4 los internacionaliza después en su barrido. Su criterio de aceptación de "cero strings hardcodeados" se evaluará incluyendo lo añadido en la Fase 5.
+- **Fase 8 después de Fase 5:** la migración ya cuenta con la suite E2E (Fase 3) como red de seguridad y migra una UI pulida (Fase 5).
+- **Fase 6 después de Fase 8:** el bucket S3 + CloudFront de la música se crean dentro de la misma cuenta/región de la migración, sin infraestructura duplicada.
 
 ---
 
@@ -151,7 +179,7 @@
 
 **Objetivo:** eliminar la mezcla de idiomas (Header en inglés, formularios en español) con es/en completos y selector persistente.
 
-**Dependencias:** Fase 3 recomendada (los E2E protegen contra regresiones al tocar todos los textos).
+**Dependencias:** Fase 3 recomendada (los E2E protegen contra regresiones al tocar todos los textos). **En el plan revisado se ejecuta después del demo**, por lo que su alcance incluye también los textos nuevos introducidos en la Fase 5 (que se adelantó y se escribió con la convención actual).
 
 **Pasos:**
 
@@ -180,7 +208,7 @@
 
 **Objetivo:** pulir la experiencia con un backlog explícito P0/P1/P2; cada ítem es independiente y mergeable.
 
-**Dependencias:** Fase 4 (todo texto nuevo nace ya internacionalizado).
+**Dependencias:** Fase 3 (red de seguridad E2E al tocar los hooks de sesión y el timer). **Se adelanta antes de la Fase 4** (dependencia invertida respecto al plan original): los textos nuevos se escriben con la convención actual y la Fase 4 los internacionaliza después en su barrido. Es la fase de pulido previa a publicar el demo en AWS (Fase 8).
 
 **P0 (esencial):**
 1. **Título de pestaña dinámico**: `document.title = "24:31 — Focus"` durante sesión activa (hook en `features/timer/`), restaurar al salir. Crítico para "bring your own tab" de Fase 6.
@@ -212,7 +240,7 @@
 
 **Objetivo:** acompañamiento musical para sesiones de foco con una librería propia de pistas lo-fi/jazz/soul generadas con IA (Suno), servidas desde S3 + CloudFront. Cubre al 100% de los usuarios, **sin credenciales, sin OAuth, sin APIs de terceros, sin condición de parada**.
 
-**Dependencias:** Fase 5 P0-1 (título de pestaña). Para el hosting de audio basta un **bucket S3 + distribución CloudFront independientes**, que pueden crearse antes de la migración completa de Fase 8 (no requiere esperar a AWS al 100%).
+**Dependencias:** Fase 5 P0-1 (título de pestaña) y Fase 8 (migración AWS). **En el plan revisado se ejecuta después del demo**: el bucket S3 + CloudFront del audio se crean dentro de la misma cuenta/región ya migrada en la Fase 8, evitando infraestructura duplicada. (Si por algún motivo se necesitara antes, técnicamente un bucket S3 + CloudFront independientes bastan, pero el orden revisado lo posterga tras la migración.)
 
 **Decisión de arquitectura (cerrada tras pressure-test del consejo + ajuste del dueño):**
 
@@ -313,7 +341,7 @@
 
 **Objetivo:** migrar de Vercel/Railway/Supabase a AWS Free Tier como ejercicio de portfolio de infraestructura, manteniendo paridad funcional y sin downtime de datos.
 
-**Dependencias:** Fases 1–3 (CI verde + E2E como red de seguridad de la migración). Última fase; no bloquea ninguna otra.
+**Dependencias:** Fases 1–3 (CI verde + E2E como red de seguridad de la migración) y **Fase 5** (UI pulida para el demo). **En el plan revisado es el hito para publicar el demo**; tras él vienen las Fases 4 (i18n), 6 (música) y 7 (IA).
 
 **Arquitectura objetivo (Free Tier):**
 
@@ -350,33 +378,29 @@
 - [ ] Documento de arquitectura que justifica explícitamente lo que NO se usó (Redshift/Glue/Athena/Spark) y por qué.
 
 **Riesgos / CONDICIÓN DE PARADA (b):**
-- **⛔ Esta fase es BLOQUEANTE hasta que exista cuenta AWS activa y decisión explícita del usuario de abandonar Vercel/Railway.** Todo lo demás del plan (Fases 1–7) se entrega sobre la infraestructura actual.
+- **✅ Decisión de migrar tomada (2026-06-21):** esta fase es ahora un objetivo activo (publicar el demo). El único prerequisito operativo pendiente es disponer de la **cuenta AWS activa**; con ella, la fase arranca tras completar las Fases 3 y 5.
 - t3.micro de 1 GB es justo → swap configurado, y refuerza la decisión de Fase 7 de no self-hostear LLMs.
 - Free Tier expira a los 12 meses → documentar coste post-free-tier (~$25–30/mes) para decisión informada.
 
 ---
 
-## Resumen ejecutivo de secuenciación
+## Resumen ejecutivo de secuenciación (revisado 2026-06-21)
 
 ```
-Fase 1 (Saneamiento)  ── base obligatoria de todo
-   │
-   ├──► Fase 2 (Rendimiento) ──┐
-   │                           │
-   ├──► Fase 3 (Playwright) ───┼──► Fase 4 (i18n) ──► Fase 5 (UX P0/P1/P2)
-   │         │                 │                            │
-   │         │ (red de         │                            ├──► Fase 6 (Música)
-   │         │  seguridad)     │                            │      [pistas Suno en S3/CloudFront,
-   │         │                 │                            │       sin bloqueos · ≈$0/mes]
-   │         │                 │                            │
-   ├─────────┼─────────────────┴────────────────────────────┴──► Fase 7 (IA 2 capas)
-   │         │                                                     [Capa 1 sin bloqueos;
-   │         │                                                      ⛔ Capa 2: OPENROUTER_API_KEY]
-   │         ▼
-   └──► Fase 8 (AWS) — requiere Fases 1–3; no bloquea nada
-              [⛔ bloqueada por cuenta/decisión AWS]
+Fase 1 (Saneamiento) ✅ ──► Fase 2 (Rendimiento) ✅
+        │
+        ▼
+Fase 3 (Playwright E2E) ──► Fase 5 (Backlog UX) ──► Fase 8 (AWS · PUBLICAR DEMO)
+   [red de seguridad]         [pulido del demo]              │
+                                                             ▼
+                                  ┌──────────────────┬───────┴───────────┐
+                                  ▼                  ▼                    ▼
+                            Fase 4 (i18n)      Fase 6 (Música)     Fase 7 (IA 2 capas)
+                         [barre también los  [reutiliza S3/        [Capa 1 sin bloqueos;
+                          textos de Fase 5]   CloudFront de AWS]    ⛔ Capa 2: OPENROUTER_API_KEY]
 ```
 
-- **Camino crítico:** 1 → 3 → 4 → 5. Las Fases 2, 6 y 7 (Capa 1) son paralelizables tras la Fase 1.
-- **Cada fase es mergeable de forma independiente**; dentro de cada fase, cada paso es un PR pequeño.
-- **Las dos condiciones de parada (OpenRouter, AWS) nunca bloquean el camino crítico**: cada fase afectada tiene una entrega completa sin el recurso bloqueado. La Fase 6 dejó de tener condición de parada al descartar Spotify.
+- **Camino crítico revisado:** 3 → 5 → 8. Objetivo: **publicar el demo en AWS**. Las Fases 1 y 2 ya están entregadas.
+- **Post-demo (paralelizables tras la Fase 8):** 4 (i18n), 6 (música) y 7 (IA Capa 1). La Fase 4 absorbe los textos nuevos que la Fase 5 dejó sin internacionalizar.
+- **Cada fase sigue siendo mergeable de forma independiente**; dentro de cada fase, cada paso es un PR pequeño.
+- **Condiciones de parada:** OpenRouter (solo Capa 2 de la Fase 7) sigue sin bloquear nada. La decisión AWS de la Fase 8 **ya está tomada**; resta solo el prerequisito operativo de la cuenta activa. La Fase 6 no tiene condición de parada (se descartó Spotify).
