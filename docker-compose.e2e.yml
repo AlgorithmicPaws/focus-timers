@@ -1,0 +1,23 @@
+# Postgres efímero para la suite E2E (Fase 3) en local.
+# Mismas credenciales que el servicio `postgres` del CI (.github/workflows/ci.yml).
+#
+#   docker compose -f docker-compose.e2e.yml up -d   # arrancar
+#   docker compose -f docker-compose.e2e.yml down -v  # parar y borrar datos
+#
+# Los datos viven en un tmpfs: cada arranque parte de una BD limpia.
+services:
+  postgres-e2e:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: focus
+      POSTGRES_PASSWORD: focus
+      POSTGRES_DB: focus_test
+    ports:
+      - "5432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "focus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
