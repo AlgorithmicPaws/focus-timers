@@ -249,9 +249,9 @@ Migrations live in `backend/migrations/versions/`: `1bc760c13d7b` (initial schem
 - `features/timer/hooks/useBolsaTimer.ts` — Bolsa de Tiempo budget countdown
 - `features/pomodoro/hooks/usePomodoroSession.ts`, `features/flowtime/hooks/useFlowtimeSession.ts`, `features/bolsa/hooks/useBolsaSession.ts` — orchestrate timer + save to API on session end (via `useAuthGuardedSave.ts`)
 
-> ⚠️ Known bugs documented for Plan Fase 3 (red→green E2E), **not yet fixed** — see `docs/PLAN.md` "Estado actual":
-> - **Bug #6** `useTimer.ts` uses `setInterval(1000)` decrementing state instead of anchoring to `Date.now()` → drifts when the tab is backgrounded (browser throttling).
-> - **Bug #7** `api-client.ts` does a hard `window.location.href = ROUTES.LOGIN` on 401 → reloads the page and destroys a running timer.
+> ✅ Bugs #6 and #7 (documented for Plan Fase 3, red→green E2E) are **fixed**:
+> - **Bug #6** `useTimer.ts` now anchors to `Date.now()` (`endAtRef`) instead of decrementing per tick, plus a `visibilitychange` resync → no drift when the tab is backgrounded. Covered by `e2e/bugs/timer-drift.spec.ts` + `useTimer.test.ts`.
+> - **Bug #7** `api-client.ts` no longer does a hard `window.location.href` on 401; it calls `logout()` + shows a toast, and `ProtectedRoute` reactively redirects only on protected routes, so a running public timer survives. Covered by `e2e/bugs/auth-401-hard-reload.spec.ts`.
 
 ### Routing
 Defined in `app/router.tsx` (constants in `shared/constants/routes.ts`). **Timers, dashboard and settings are public by design** so users can try the app without an account; only `/sessions` (history) is wrapped in `ProtectedRoute`, which redirects unauthenticated users to `/login`. Saving a session from a public timer triggers the auth prompt (`useAuthGuardedSave.ts` + `AuthPrompt.tsx`).

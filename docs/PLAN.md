@@ -165,10 +165,10 @@
 **Archivos afectados:** `frontend/e2e/**` (nuevo), `frontend/playwright.config.ts` (nuevo), `frontend/src/features/timer/hooks/useTimer.ts`, `frontend/src/shared/lib/api-client.ts`, `frontend/src/features/auth/store/auth.store.ts`, `frontend/package.json`, `.github/workflows/ci.yml`.
 
 **Criterios de aceptación:**
-- [ ] Ambos tests de bug existen en un commit en rojo y pasan a verde con el fix (verificable en historial).
-- [ ] Un Pomodoro de 25 min en pestaña de fondo termina a la hora correcta (±1 s).
-- [ ] Un 401 durante timer activo no recarga la página ni resetea el timer.
-- [ ] Suite E2E verde en CI en <10 min.
+- [x] Ambos tests de bug existen en un commit en rojo y pasan a verde con el fix (verificable en historial). *(Bug #6: commits `66d0d36`→`fc8cc02`. Bug #7: test + fix de `api-client.ts`; rojo→verde verificado localmente revirtiendo el fix.)*
+- [x] Un Pomodoro de 25 min en pestaña de fondo termina a la hora correcta (±1 s). *(`e2e/bugs/timer-drift.spec.ts` + `useTimer.test.ts`.)*
+- [x] Un 401 durante timer activo no recarga la página ni resetea el timer. *(`e2e/bugs/auth-401-hard-reload.spec.ts`.)*
+- [x] Suite E2E verde en CI en <10 min. *(Job `e2e` en `ci.yml`; 11 tests pasan en ~6 s en chromium local. Pendiente: primera ejecución real en CI con webkit.)*
 
 **Riesgos:** flakiness de E2E con timers → usar `page.clock` (Playwright ≥1.45), nunca `waitForTimeout`. El fix de `useTimer` toca el corazón de las 3 técnicas → la API del hook no cambia y los 3 smoke tests lo cubren.
 
