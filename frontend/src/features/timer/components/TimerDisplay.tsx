@@ -15,6 +15,7 @@ export function TimerDisplay({ secondsLeft }: TimerDisplayProps) {
       style={{ color: "var(--text-primary)", fontSize: "clamp(4.5rem, 22vw, 9rem)" }}
       aria-live="off"
       aria-label={`${minutes} minutes ${seconds} seconds`}
+      data-testid="timer-display"
     >
       {formatted}
     </div>
